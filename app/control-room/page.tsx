@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import AdminLogin from "@/components/AdminLogin";
 import ControlRoom from "@/components/ControlRoom";
 import SettlementPanel from "@/components/SettlementPanel";
+import SaleRiskPanel from "@/components/SaleRiskPanel";
 import {
   ADMIN_COOKIE,
   adminConfigured,
@@ -57,6 +58,7 @@ export default async function ControlRoomPage() {
         </p>
       </section>
       <ControlRoom />
+      <SaleRiskPanel />
       <SettlementPanel />
     </main>
   );
