@@ -36,9 +36,12 @@ function checkoutEnabled() {
   );
 }
 
-function saleOpen(eventStartAt: string | null) {
-  if (!eventStartAt) return false;
-  const starts = new Date(eventStartAt).getTime();
+function saleOpen(pick: {
+  event_start_at: string | null;
+  sale_status: "open" | "closed";
+}) {
+  if (pick.sale_status !== "open" || !pick.event_start_at) return false;
+  const starts = new Date(pick.event_start_at).getTime();
   return Number.isFinite(starts) && starts > Date.now();
 }
 
@@ -73,8 +76,8 @@ export async function GET() {
           getPublishedPickByTier(activeMatchday.slug, "elite"),
         ]);
         availability = {
-          pro: Boolean(proPick && saleOpen(proPick.event_start_at)),
-          elite: Boolean(elitePick && saleOpen(elitePick.event_start_at)),
+          pro: Boolean(proPick && saleOpen(proPick)),
+          elite: Boolean(elitePick && saleOpen(elitePick)),
         };
       }
     } catch {
@@ -151,7 +154,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!saleOpen(publishedPick.event_start_at)) {
+  if (publishedPick.sale_status !== "open") {
+    return NextResponse.json(
+      { error: "sale_closed" },
+      { status: 409 },
+    );
+  }
+
+  if (!saleOpen(publishedPick)) {
     return NextResponse.json(
       { error: "event_started" },
       { status: 409 },
