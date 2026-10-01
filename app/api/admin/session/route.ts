@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { sameOrigin } from "@/lib/server/request-security";
 import {
   ADMIN_COOKIE,
   adminConfigured,
@@ -10,6 +11,10 @@ import {
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
+  if (!sameOrigin(request)) {
+    return NextResponse.json({ error: "invalid_origin" }, { status: 403 });
+  }
+
   if (!adminConfigured()) {
     return NextResponse.json(
       { error: "admin_not_configured" },
@@ -40,7 +45,11 @@ export async function POST(request: NextRequest) {
   return response;
 }
 
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
+  if (!sameOrigin(request)) {
+    return NextResponse.json({ error: "invalid_origin" }, { status: 403 });
+  }
+
   const response = NextResponse.json({ ok: true });
   response.cookies.set(ADMIN_COOKIE, "", {
     httpOnly: true,
