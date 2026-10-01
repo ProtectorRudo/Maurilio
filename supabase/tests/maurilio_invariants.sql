@@ -46,6 +46,41 @@ select
   exists(select 1 from public.maurilio_picks where public_id='CI-INVARIANT-FREE' and status='published'),
   'valid published pick exists';
 
+do $
+declare
+  v_matchday_id uuid;
+begin
+  select id into v_matchday_id
+  from public.maurilio_matchdays
+  where slug='2099-12-01';
+
+  begin
+    insert into public.maurilio_picks (
+      matchday_id, public_id, tier, sport, competition, event, market, selection,
+      bookmaker, entry_odds, minimum_odds, probability_own, probability_low,
+      probability_high, stake_pct, stake_ars, thesis, principal_risk,
+      odds_captured_at, status, published_at
+    )
+    values (
+      v_matchday_id, 'CI-INVARIANT-FRAGILE', 'pro', 'football', 'TEST',
+      'A vs B', 'Totals', 'Over', 'Bet365', 1.80, 1.70,
+      0.60, 0.54, 0.66, 0.01, 1000,
+      'Central value only', 'Lower bound loses value',
+      '2099-12-01T12:05:00-03:00', 'published', now()
+    );
+
+    insert into maurilio_invariant_results
+    values ('reject_fragile_lower_bound', false, 'unexpected insert');
+  exception when others then
+    insert into maurilio_invariant_results
+    values (
+      'reject_fragile_lower_bound',
+      position('maurilio_published_pick_requires_positive_lower_ev' in sqlerrm) > 0,
+      sqlerrm
+    );
+  end;
+end $;
+
 do $$
 begin
   begin
