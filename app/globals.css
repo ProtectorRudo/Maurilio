@@ -208,3 +208,16 @@ linear-gradient(180deg,#07100c,#050807 42%);padding-bottom:90px}
 .preview-risk-budget p{margin:0;color:#829087;font-size:9px;line-height:1.5}
 @media(max-width:1000px){.control-risk-strip{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:620px){.control-risk-strip{grid-template-columns:1fr 1fr}}
+
+/* --- Immutable publication state --- */
+.published-lock-banner{display:flex;align-items:center;justify-content:space-between;gap:20px;border:1px solid rgba(230,187,105,.2);background:rgba(230,187,105,.035);border-radius:10px;padding:12px 14px}
+.published-lock-banner div{display:grid;gap:4px}.published-lock-banner span{color:var(--amber);font:7px monospace;letter-spacing:.12em}.published-lock-banner b{font:10px monospace;color:#d9dfda}.published-lock-banner p{margin:0;max-width:520px;color:#747f78;font-size:9px;line-height:1.5}
+.control-ops.is-published .control-matchday-bar input,
+.control-ops.is-published .control-matchday-bar textarea,
+.control-ops.is-published .control-matchday-bar .no-value-toggle,
+.control-ops.is-published .control-grid input,
+.control-ops.is-published .control-grid textarea,
+.control-ops.is-published .control-grid .pick-enabled,
+.control-ops.is-published .tier-editor-tabs button{pointer-events:none;opacity:.58}
+.ledger-empty-row{padding:26px 16px;text-align:center;border-top:1px solid var(--line);color:#66726b;font:9px monospace;letter-spacing:.05em}
+@media(max-width:720px){.published-lock-banner{align-items:flex-start;flex-direction:column}}
