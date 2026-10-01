@@ -1,7 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { currentMatchday } from "@/lib/demo-data";
+import {
+  databaseConfigured,
+  insertOrder,
+  updateOrderByExternalReference,
+} from "@/lib/server/supabase-rest";
+import {
+  createMercadoPagoOrder,
+  mapProviderOrderStatus,
+  mercadoPagoConfigured,
+} from "@/lib/server/mercadopago";
 
 type Tier = "pro" | "elite";
 
+const ACCESS_COOKIE = "maurilio_sid";
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
   "https://viralio.net/maurilio";
@@ -18,8 +30,28 @@ function readPrice(tier: Tier): number | null {
 function checkoutEnabled() {
   return (
     process.env.MAURILIO_CHECKOUT_ENABLED === "1" &&
-    Boolean(process.env.MERCADOPAGO_ACCESS_TOKEN)
+    mercadoPagoConfigured() &&
+    databaseConfigured()
   );
+}
+
+function validUuid(value: string | undefined) {
+  return Boolean(
+    value &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        value,
+      ),
+  );
+}
+
+function sameOrigin(request: NextRequest) {
+  const origin = request.headers.get("origin");
+  if (!origin) return false;
+  try {
+    return new URL(origin).origin === new URL(SITE_URL).origin;
+  } catch {
+    return false;
+  }
 }
 
 export async function GET() {
@@ -43,7 +75,11 @@ export async function GET() {
   );
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  if (!sameOrigin(request)) {
+    return NextResponse.json({ error: "invalid_origin" }, { status: 403 });
+  }
+
   if (!checkoutEnabled()) {
     return NextResponse.json(
       { error: "checkout_disabled" },
@@ -70,85 +106,79 @@ export async function POST(request: Request) {
     );
   }
 
-  const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
-  if (!accessToken) {
-    return NextResponse.json(
-      { error: "provider_not_configured" },
-      { status: 503 },
-    );
-  }
+  const currentCookie = request.cookies.get(ACCESS_COOKIE)?.value;
+  const subjectId = validUuid(currentCookie)
+    ? currentCookie!
+    : crypto.randomUUID();
 
-  const orderRef = `maurilio_${tier}_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
-  const amountString = amount.toFixed(2);
-  const title =
-    tier === "elite"
-      ? "Maurilio — High Conviction"
-      : "Maurilio — Análisis PRO";
+  const externalReference =
+    `maurilio_${currentMatchday.slug}_${tier}_${crypto.randomUUID()}`;
 
-  const providerResponse = await fetch(
-    "https://api.mercadopago.com/v1/orders",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "X-Idempotency-Key": crypto.randomUUID(),
-      },
-      body: JSON.stringify({
-        type: "online",
-        processing_mode: "manual",
-        total_amount: amountString,
-        external_reference: orderRef,
-        description: title,
-        items: [
-          {
-            title,
-            quantity: 1,
-            unit_measure: "unit",
-            unit_price: amountString,
-            total_amount: amountString,
-          },
-        ],
-        config: {
-          online: {
-            success_url: `${SITE_URL}/access/success`,
-            pending_url: `${SITE_URL}/access/pending`,
-            failure_url: `${SITE_URL}/access/failure`,
-            auto_return: "all",
-          },
-        },
-      }),
-      cache: "no-store",
-    },
-  );
-
-  const providerBody = (await providerResponse.json()) as {
-    id?: string;
-    checkout_url?: string;
-    message?: string;
-  };
-
-  if (!providerResponse.ok || !providerBody.checkout_url) {
-    console.error("Mercado Pago order creation failed", {
-      status: providerResponse.status,
-      message: providerBody.message,
+  try {
+    await insertOrder({
+      external_reference: externalReference,
+      subject_id: subjectId,
+      matchday_slug: currentMatchday.slug,
+      tier,
+      amount_ars: amount,
     });
+
+    const providerOrder = await createMercadoPagoOrder({
+      externalReference,
+      amount,
+      tier,
+      siteUrl: SITE_URL,
+    });
+
+    await updateOrderByExternalReference(externalReference, {
+      provider_order_id: providerOrder.id,
+      status: mapProviderOrderStatus(providerOrder),
+      checkout_url: providerOrder.checkout_url,
+      live_mode:
+        typeof providerOrder.live_mode === "boolean"
+          ? providerOrder.live_mode
+          : null,
+      provider_payload: providerOrder,
+    });
+
+    const response = NextResponse.json(
+      {
+        orderId: providerOrder.id,
+        checkoutUrl: providerOrder.checkout_url,
+      },
+      {
+        headers: {
+          "Cache-Control": "private, no-store, max-age=0",
+        },
+      },
+    );
+
+    response.cookies.set(ACCESS_COOKIE, subjectId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/maurilio",
+      maxAge: 60 * 60 * 24 * 90,
+    });
+
+    return response;
+  } catch (error) {
+    console.error("Checkout initialization failed", {
+      externalReference,
+      error: error instanceof Error ? error.message : "unknown",
+    });
+
+    try {
+      await updateOrderByExternalReference(externalReference, {
+        status: "failed",
+      });
+    } catch {
+      // If persistence itself is unavailable, checkout remains failed closed.
+    }
+
     return NextResponse.json(
-      { error: "provider_error" },
+      { error: "checkout_initialization_failed" },
       { status: 502 },
     );
   }
-
-  return NextResponse.json(
-    {
-      orderId: providerBody.id,
-      checkoutUrl: providerBody.checkout_url,
-    },
-    {
-      headers: {
-        "Cache-Control": "private, no-store, max-age=0",
-      },
-    },
-  );
 }
