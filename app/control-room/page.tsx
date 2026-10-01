@@ -20,7 +20,7 @@ export default function ControlRoomPage() {
   return (
     <main className="control-page">
       <header className="subpage-nav">
-        <a className="brand" href="/"><span className="brand-mark">M</span><span><b>MAURILIO</b><small>CONTROL ROOM</small></span></a>
+        <a className="brand" href="/maurilio"><span className="brand-mark">M</span><span><b>MAURILIO</b><small>CONTROL ROOM</small></span></a>
         <span className="status-pill">PRE-LAUNCH</span>
       </header>
       <section className="control-hero">

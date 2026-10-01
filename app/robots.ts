@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/control-room"],
+        disallow: ["/maurilio/control-room"],
       },
     ],
     sitemap: "https://viralio.net/maurilio/sitemap.xml",

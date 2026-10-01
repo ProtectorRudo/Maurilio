@@ -100,7 +100,7 @@ export default function Matchday() {
         <nav className="nav-links" aria-label="Principal">
           <a href="#matchday">Matchday</a>
           <a href="#method">Método</a>
-          <a href="/archive">Registro</a>
+          <a href="/maurilio/archive">Registro</a>
         </nav>
         <a className="nav-cta" href="#matchday">Entrar al vestuario <Icon name="arrow" /></a>
       </header>
@@ -270,7 +270,7 @@ export default function Matchday() {
             <span className="section-kicker">LEDGER PÚBLICO</span>
             <h2>La confianza no se promete.<br/>Se deja auditar.</h2>
             <p>Ganadas y perdidas. Precio de entrada, cierre, CLV y aprendizaje. Sin borrar pronósticos incómodos.</p>
-            <a href="/archive" className="text-button">Abrir archivo completo</a>
+            <a href="/maurilio/archive" className="text-button">Abrir archivo completo</a>
           </div>
           <div className="ledger-preview">
             <div className="ledger-head"><span>ID</span><span>EDGE</span><span>CLV</span><span>STATUS</span></div>

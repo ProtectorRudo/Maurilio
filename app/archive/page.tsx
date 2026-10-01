@@ -10,8 +10,8 @@ export default function ArchivePage() {
   return (
     <main className="ledger-page">
       <header className="subpage-nav">
-        <a className="brand" href="/"><span className="brand-mark">M</span><span><b>MAURILIO</b><small>QUANT FOOTBALL</small></span></a>
-        <a href="/" className="text-button">Volver al Matchday</a>
+        <a className="brand" href="/maurilio"><span className="brand-mark">M</span><span><b>MAURILIO</b><small>QUANT FOOTBALL</small></span></a>
+        <a href="/maurilio" className="text-button">Volver al Matchday</a>
       </header>
       <section className="ledger-hero">
         <span className="section-kicker">LEDGER PÚBLICO</span>
