@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import ControlRoom from "@/components/ControlRoom";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Control Room — Maurilio",
@@ -7,6 +10,13 @@ export const metadata: Metadata = {
 };
 
 export default function ControlRoomPage() {
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.MAURILIO_ADMIN_PREVIEW !== "1"
+  ) {
+    notFound();
+  }
+
   return (
     <main className="control-page">
       <header className="subpage-nav">
