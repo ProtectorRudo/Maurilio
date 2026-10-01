@@ -17,6 +17,7 @@ export type MaurilioPickRow = {
   probability_low: number | string | null;
   probability_high: number | string | null;
   stake_pct: number | string | null;
+  stake_ars: number | string | null;
   thesis: string | null;
   principal_risk: string | null;
   odds_captured_at: string | null;
@@ -284,7 +285,7 @@ export async function getPublishedPickByTier(
 
   const pickQuery = new URLSearchParams({
     select:
-      "id,matchday_id,public_id,tier,sport,competition,event,market,selection,bookmaker,entry_odds,minimum_odds,probability_own,probability_low,probability_high,stake_pct,thesis,principal_risk,odds_captured_at,status,published_at",
+      "id,matchday_id,public_id,tier,sport,competition,event,market,selection,bookmaker,entry_odds,minimum_odds,probability_own,probability_low,probability_high,stake_pct,stake_ars,thesis,principal_risk,odds_captured_at,status,published_at",
     matchday_id: `eq.${matchday.id}`,
     tier: `eq.${tier}`,
     status: "eq.published",
@@ -307,6 +308,7 @@ export type SettledLedgerRow = {
   probability_own: number | string | null;
   result: "win" | "loss" | "push" | "void" | null;
   pnl_ars: number | string | null;
+  stake_ars: number | string | null;
   odds_captured_at: string | null;
   settled_at: string | null;
 };
@@ -315,7 +317,7 @@ export async function getSettledLedger(limit = 100) {
   const safeLimit = Math.min(Math.max(Math.trunc(limit), 1), 250);
   const query = new URLSearchParams({
     select:
-      "public_id,event,market,entry_odds,closing_odds,probability_own,result,pnl_ars,odds_captured_at,settled_at",
+      "public_id,event,market,entry_odds,closing_odds,probability_own,result,pnl_ars,stake_ars,odds_captured_at,settled_at",
     status: "eq.settled",
     order: "settled_at.desc",
     limit: String(safeLimit),
