@@ -52,6 +52,7 @@ Required fields for every published pick:
 - minimum acceptable odds
 - own probability
 - probability range
+- positive EV at the lower bound of the probability range
 - stake percentage
 - stake ARS
 - thesis
@@ -64,6 +65,7 @@ Publication is rejected when any of these rules fail:
 - entry odds are below minimum odds
 - own probability/range is invalid
 - central EV is not positive
+- lower-bound EV is not positive (fragile signal)
 - stake is <= 0 or > 2%
 - simultaneous exposure is > 6%
 - stake ARS and stake % disagree with live bankroll
