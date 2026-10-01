@@ -1,0 +1,118 @@
+name: Deploy Maurilio
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Deployment target"
+        required: true
+        type: choice
+        options:
+          - preview
+          - production
+        default: preview
+      production_confirmation:
+        description: "For production only, type DEPLOY_PRODUCTION"
+        required: false
+        type: string
+
+concurrency:
+  group: maurilio-deploy-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+    steps:
+      - name: Validate deployment gate
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          missing=0
+          for key in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "${!key:-}" ]; then
+              echo "::error::Missing required GitHub secret: $key"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+          if [ "${{ inputs.target }}" = "production" ] && [ "${{ inputs.production_confirmation }}" != "DEPLOY_PRODUCTION" ]; then
+            echo "::error::Production deploy requires production_confirmation=DEPLOY_PRODUCTION"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pinned Vercel CLI
+        run: npm install --global vercel@59.19.1
+
+      - name: Pull Vercel project configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ inputs.target }}" = "production" ]; then
+            vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          else
+            vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+          fi
+
+      - name: Build deployment artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ inputs.target }}" = "production" ]; then
+            vercel build --prod --token="$VERCEL_TOKEN"
+          else
+            vercel build --token="$VERCEL_TOKEN"
+          fi
+
+      - name: Deploy prebuilt artifact
+        id: deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ inputs.target }}" = "production" ]; then
+            url="$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")"
+          else
+            url="$(vercel deploy --prebuilt --token="$VERCEL_TOKEN")"
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Deployment URL: $url"
+
+      - name: Verify health endpoint
+        shell: bash
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 4 --retry-delay 2             "${DEPLOYMENT_URL}/maurilio/api/health"
+
+      - name: Deployment summary
+        shell: bash
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          {
+            echo "## Maurilio deploy"
+            echo ""
+            echo "- Target: ${{ inputs.target }}"
+            echo "- Commit: ${GITHUB_SHA}"
+            echo "- URL: ${DEPLOYMENT_URL}"
+            echo "- Health: passed"
+          } >> "$GITHUB_STEP_SUMMARY"
