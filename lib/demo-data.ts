@@ -22,7 +22,7 @@ export const currentMatchday: Matchday = {
       thesis: "El precio de mercado infravalora una combinación de ritmo, disciplina y contexto competitivo.",
       risk: "La señal depende de que el partido conserve intensidad competitiva; un guion muy tempranamente resuelto reduce faltas y tarjetas.",
       bookmaker: "Bet365",
-      capturedAt: "19:00 ART",
+      capturedAt: "CUOTA BET365 NO VERIFICADA",
     },
   ],
   archivePreview: [
