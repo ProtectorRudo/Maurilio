@@ -8,6 +8,7 @@ import {
   databaseConfigured,
   getLatestPublishedMatchday,
   getPublishedPickByTier,
+  getRiskSnapshot,
   publishMatchdayBundle,
 } from "@/lib/server/supabase-rest";
 
@@ -235,11 +236,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "duplicate_tier" }, { status: 400 });
     }
 
-    const totalExposure = picks.reduce(
+    const risk = await getRiskSnapshot();
+    const bank = Number(risk.bank_ars);
+    if (!Number.isFinite(bank) || bank <= 0) {
+      return NextResponse.json({ error: "invalid_bank_state" }, { status: 409 });
+    }
+
+    const declaredExposure = picks.reduce(
       (sum, pick) => sum + Number(pick.stake_pct),
       0,
     );
-    if (totalExposure > 0.06) {
+    const actualStakeArs = picks.reduce(
+      (sum, pick) => sum + Number(pick.stake_ars),
+      0,
+    );
+    const actualExposure = actualStakeArs / bank;
+
+    for (const pick of picks) {
+      const actualPct = Number(pick.stake_ars) / bank;
+      if (actualPct > 0.020001) {
+        return NextResponse.json(
+          { error: "stake_ars_over_2pct_bank" },
+          { status: 400 },
+        );
+      }
+      if (Math.abs(actualPct - Number(pick.stake_pct)) > 0.0005) {
+        return NextResponse.json(
+          { error: "stake_pct_amount_mismatch" },
+          { status: 400 },
+        );
+      }
+    }
+
+    if (declaredExposure > 0.060001 || actualExposure > 0.060001) {
       return NextResponse.json(
         { error: "simultaneous_exposure_over_6pct" },
         { status: 400 },
