@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description:
     "Auditoría cuantitativa de mercados deportivos. Compramos probabilidades, no certezas.",
   applicationName: "Maurilio",
-  alternates: { canonical: "/" },
+  alternates: { canonical: siteUrl },
   openGraph: {
     title: "Maurilio Bet — Quant Football",
     description: "El mercado pone el precio. Nosotros auditamos la probabilidad.",
