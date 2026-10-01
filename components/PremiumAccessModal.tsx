@@ -147,8 +147,12 @@ export default function PremiumAccessModal({
       }
 
       window.location.assign(data.checkoutUrl);
-    } catch {
-      setError("No pudimos iniciar el pago. No se realizó ningún cargo.");
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message === "event_started"
+          ? "El evento ya comenzó. La venta de este informe quedó cerrada automáticamente."
+          : "No pudimos iniciar el pago. No se realizó ningún cargo.",
+      );
       setStarting(false);
     }
   }
