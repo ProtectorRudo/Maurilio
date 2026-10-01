@@ -32,6 +32,16 @@ export type MaurilioPickRow = {
   principal_risk: string | null;
   odds_captured_at: string | null;
   event_start_at: string | null;
+  sale_status: "open" | "closed";
+  sale_closed_reason:
+    | "price_below_minimum"
+    | "market_unavailable"
+    | "late_information"
+    | "manual_risk_stop"
+    | null;
+  sale_closed_at: string | null;
+  last_observed_odds: number | string | null;
+  last_observed_at: string | null;
   status: "draft" | "published" | "void" | "settled";
   published_at: string | null;
 };
@@ -316,7 +326,7 @@ export async function getPublishedPickByTier(
 
   const pickQuery = new URLSearchParams({
     select:
-      "id,matchday_id,public_id,tier,sport,competition,event,market,selection,bookmaker,entry_odds,minimum_odds,probability_own,probability_low,probability_high,stake_pct,stake_ars,thesis,principal_risk,odds_captured_at,event_start_at,status,published_at",
+      "id,matchday_id,public_id,tier,sport,competition,event,market,selection,bookmaker,entry_odds,minimum_odds,probability_own,probability_low,probability_high,stake_pct,stake_ars,thesis,principal_risk,odds_captured_at,event_start_at,sale_status,sale_closed_reason,sale_closed_at,last_observed_odds,last_observed_at,status,published_at",
     matchday_id: `eq.${matchday.id}`,
     tier: `eq.${tier}`,
     status: "eq.published",
@@ -404,5 +414,32 @@ export async function getRiskSnapshot() {
   return requestJson<MaurilioRiskSnapshot>("rpc/maurilio_risk_snapshot", {
     method: "POST",
     body: {},
+  });
+}
+
+
+export async function closePublishedPickSale(input: {
+  publicId: string;
+  reason:
+    | "price_below_minimum"
+    | "market_unavailable"
+    | "late_information"
+    | "manual_risk_stop";
+  observedOdds: number | null;
+}) {
+  return requestJson<{
+    public_id: string;
+    sale_status: "closed";
+    reason: string;
+    observed_odds: number | null;
+    minimum_odds: number | null;
+    closed_at: string;
+  }>("rpc/maurilio_close_pick_sale", {
+    method: "POST",
+    body: {
+      p_public_id: input.publicId,
+      p_reason: input.reason,
+      p_observed_odds: input.observedOdds,
+    },
   });
 }
