@@ -103,6 +103,10 @@ export async function GET(
       risk: pick.principal_risk,
       capturedAt: pick.odds_captured_at,
       eventStartAt: pick.event_start_at,
+      saleStatus: pick.sale_status,
+      saleClosedReason: pick.sale_closed_reason,
+      lastObservedOdds: numberOrNull(pick.last_observed_odds),
+      lastObservedAt: pick.last_observed_at,
       publishedAt: pick.published_at,
     },
     {
