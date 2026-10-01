@@ -23,6 +23,7 @@ export const currentMatchday: Matchday = {
       risk: "La señal depende de que el partido conserve intensidad competitiva; un guion muy tempranamente resuelto reduce faltas y tarjetas.",
       bookmaker: "Bet365",
       capturedAt: "CUOTA BET365 NO VERIFICADA",
+      eventStartAt: "HORARIO NO VERIFICADO",
     },
   ],
   archivePreview: [
