@@ -27,6 +27,18 @@ function Icon({ name }: { name: "shield" | "chart" | "lock" | "arrow" | "check" 
   return <svg {...common}><circle cx="12" cy="12" r="9"/><path d="M8.5 5.2l3.5 2.5 3.5-2.5"/><path d="M7 14l2-4.2h6L17 14l-5 3.7z"/><path d="M4 10l5 .2"/><path d="M20 10l-5 .2"/></svg>;
 }
 
+function capturedLabel(value: string) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat("es-AR", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(parsed) + " ART";
+}
+
 function playTone(frequency: number, duration = 0.1, gainValue = 0.025) {
   try {
     const AudioCtx = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -172,7 +184,7 @@ export default function Matchday({ matchday = currentMatchday, isDemo = true }: 
 
           <article className="tier-card pro-card">
             <div className="tier-header"><span className="tier-number">02</span><span className="locked"><Icon name="lock"/> SELLADO</span></div>
-            <div className="jersey jersey-pro" aria-hidden="true"><span className="jersey-neck"/><span className="jersey-brand">M</span><b>PRO</b><small>1.25%</small></div>
+            <div className="jersey jersey-pro" aria-hidden="true"><span className="jersey-neck"/><span className="jersey-brand">M</span><b>PRO</b><small>≤ 1.5%</small></div>
             <div className="tier-copy"><span className="tier-label">VAR AUDIT</span><h3>Convicción media</h3><p>Más señales alineadas, auditoría ampliada y precio mínimo explícito.</p></div>
             <button className="tier-action ghost" onClick={() => setLockedTier("pro")}>Desbloquear PRO <Icon name="lock"/></button>
           </article>
@@ -180,7 +192,7 @@ export default function Matchday({ matchday = currentMatchday, isDemo = true }: 
           <article className="tier-card elite-card">
             <div className="elite-badge">HIGH CONVICTION</div>
             <div className="tier-header"><span className="tier-number">03</span><span className="locked fire"><Icon name="lock"/> PRIVATE</span></div>
-            <div className="jersey jersey-elite" aria-hidden="true"><span className="jersey-neck"/><span className="jersey-brand">M</span><b>ELITE</b><small>1.75%</small></div>
+            <div className="jersey jersey-elite" aria-hidden="true"><span className="jersey-neck"/><span className="jersey-brand">M</span><b>ELITE</b><small>≤ 2%</small></div>
             <div className="tier-copy"><span className="tier-label">THE LOCKER</span><h3>Máxima convicción</h3><p>Reservado para discrepancias excepcionales. Si no existe valor real, no aparece.</p></div>
             <button className="tier-action elite-action" onClick={() => setLockedTier("elite")}>Entrar a The Locker <Icon name="arrow"/></button>
           </article>
@@ -249,6 +261,10 @@ export default function Matchday({ matchday = currentMatchday, isDemo = true }: 
                   <div><span>Maurilio</span><i><b style={{width: pick.model + "%"}}/></i><strong>{pick.model}%</strong></div>
                 </div>
                 <div className="risk-note"><span>MEJOR RAZÓN PARA NO ENTRAR</span><p>{pick.risk}</p></div>
+                <div className="pick-proof">
+                  <span>{pick.bookmaker}</span>
+                  <b>{isDemo ? "CUOTA BET365 NO VERIFICADA" : `CAPTURA · ${capturedLabel(pick.capturedAt)}`}</b>
+                </div>
                 <button className="reset-button" onClick={() => setPhase("idle")}>Repetir experiencia</button>
               </div>
             )}
