@@ -1,4 +1,5 @@
 import Matchday from "@/components/Matchday";
+import NoValueMatchday from "@/components/NoValueMatchday";
 import { currentMatchday } from "@/lib/demo-data";
 import type { Matchday as MatchdayData, Pick } from "@/lib/types";
 import {
@@ -61,12 +62,20 @@ function mapFreePick(row: MaurilioPickRow): Pick | null {
   };
 }
 
-async function persistedMatchday(): Promise<MatchdayData | null> {
+async function persistedMatchday(): Promise<
+  | { kind: "matchday"; data: MatchdayData }
+  | { kind: "no_value"; label: string }
+  | null
+> {
   if (!databaseConfigured()) return null;
 
   try {
     const active = await getLatestPublishedMatchday();
     if (!active) return null;
+
+    if (active.no_value) {
+      return { kind: "no_value", label: active.label };
+    }
 
     const freeRow = await getPublishedPickByTier(active.slug, "free");
     if (!freeRow) return null;
@@ -75,20 +84,23 @@ async function persistedMatchday(): Promise<MatchdayData | null> {
     if (!freePick) return null;
 
     return {
-      label: active.label,
-      slug: active.slug,
-      date: active.match_date,
-      picks: [freePick],
-      archivePreview: [
-        {
-          id: `#${freePick.id}`,
-          edge: `${freePick.edge >= 0 ? "+" : ""}${freePick.edge}%`,
-          clv: "OPEN",
-          status: "PUBLISHED",
-        },
-        { id: "#PRO", edge: "—", clv: "—", status: "SEALED" },
-        { id: "#ELITE", edge: "—", clv: "—", status: "SEALED" },
-      ],
+      kind: "matchday",
+      data: {
+        label: active.label,
+        slug: active.slug,
+        date: active.match_date,
+        picks: [freePick],
+        archivePreview: [
+          {
+            id: `#${freePick.id}`,
+            edge: `${freePick.edge >= 0 ? "+" : ""}${freePick.edge}%`,
+            clv: "OPEN",
+            status: "PUBLISHED",
+          },
+          { id: "#PRO", edge: "—", clv: "—", status: "SEALED" },
+          { id: "#ELITE", edge: "—", clv: "—", status: "SEALED" },
+        ],
+      },
     };
   } catch (error) {
     console.error("Unable to load active Maurilio Matchday", {
@@ -100,10 +112,14 @@ async function persistedMatchday(): Promise<MatchdayData | null> {
 
 export default async function Home() {
   const persisted = await persistedMatchday();
-  return (
-    <Matchday
-      matchday={persisted ?? currentMatchday}
-      isDemo={!persisted}
-    />
-  );
+
+  if (persisted?.kind === "no_value") {
+    return <NoValueMatchday label={persisted.label} />;
+  }
+
+  if (persisted?.kind === "matchday") {
+    return <Matchday matchday={persisted.data} isDemo={false} />;
+  }
+
+  return <Matchday matchday={currentMatchday} isDemo />;
 }
