@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { currentMatchday } from "@/lib/demo-data";
+import type { Matchday as MatchdayData } from "@/lib/types";
 import PremiumAccessModal from "@/components/PremiumAccessModal";
 
 type Phase = "idle" | "kick" | "checking" | "revealed";
@@ -47,12 +48,12 @@ function playTone(frequency: number, duration = 0.1, gainValue = 0.025) {
   }
 }
 
-export default function Matchday() {
+export default function Matchday({ matchday = currentMatchday, isDemo = true }: { matchday?: MatchdayData; isDemo?: boolean }) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [lockedTier, setLockedTier] = useState<LockedTier>(null);
   const [activeAudit, setActiveAudit] = useState(0);
   const transitionTimer = useRef<number | null>(null);
-  const pick = currentMatchday.picks[0];
+  const pick = matchday.picks[0];
 
   useEffect(() => {
     if (phase !== "checking") return;
@@ -77,7 +78,7 @@ export default function Matchday() {
     if (transitionTimer.current) window.clearTimeout(transitionTimer.current);
   }, []);
 
-  const dateLabel = useMemo(() => currentMatchday.label, []);
+  const dateLabel = useMemo(() => matchday.label, [matchday.label]);
 
   function executeKick() {
     if (phase !== "idle") return;
@@ -220,7 +221,7 @@ export default function Matchday() {
             {phase === "revealed" && (
               <div className="revealed-state reveal-enter">
                 <div className="decision-line"><span>QUANT DECISION</span><b>VALUE DETECTED</b></div>
-                <span className="demo-badge">DATOS DEMO · ESTRUCTURA LISTA PARA PRODUCCIÓN</span>
+                <span className="demo-badge">{isDemo ? "DATOS DEMO · ESTRUCTURA LISTA PARA PRODUCCIÓN" : "PICK PUBLICADO · REGISTRO ACTIVO"}</span>
                 <small className="competition">{pick.competition}</small>
                 <h3>{pick.event}</h3>
                 <div className="pick-main">
@@ -274,7 +275,7 @@ export default function Matchday() {
           </div>
           <div className="ledger-preview">
             <div className="ledger-head"><span>ID</span><span>EDGE</span><span>CLV</span><span>STATUS</span></div>
-            {currentMatchday.archivePreview.map((item) => (
+            {matchday.archivePreview.map((item) => (
               <div key={item.id}><span>{item.id}</span><span>{item.edge}</span><span>{item.clv}</span><b>{item.status}</b></div>
             ))}
           </div>
