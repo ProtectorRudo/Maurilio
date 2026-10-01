@@ -296,3 +296,29 @@ export async function getPublishedPickByTier(
   });
   return picks[0] ?? null;
 }
+
+
+export type SettledLedgerRow = {
+  public_id: string;
+  event: string;
+  market: string;
+  entry_odds: number | string | null;
+  closing_odds: number | string | null;
+  probability_own: number | string | null;
+  result: "win" | "loss" | "push" | "void" | null;
+  pnl_ars: number | string | null;
+  odds_captured_at: string | null;
+  settled_at: string | null;
+};
+
+export async function getSettledLedger(limit = 100) {
+  const safeLimit = Math.min(Math.max(Math.trunc(limit), 1), 250);
+  const query = new URLSearchParams({
+    select:
+      "public_id,event,market,entry_odds,closing_odds,probability_own,result,pnl_ars,odds_captured_at,settled_at",
+    status: "eq.settled",
+    order: "settled_at.desc",
+    limit: String(safeLimit),
+  });
+  return rest<SettledLedgerRow[]>("maurilio_picks", { query });
+}
