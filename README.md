@@ -54,6 +54,8 @@ Ver:
 
 - [Daily Operations Runbook](docs/OPERATIONS.md)
 - [Production Launch Contract](docs/LAUNCH.md)
+- [Vercel Deployment](docs/DEPLOY.md)
+- [Database migrations & invariant tests](supabase/README.md)
 
 ## Release gate
 
