@@ -384,3 +384,24 @@ export async function settlePublishedPick(input: {
     },
   });
 }
+
+
+export type MaurilioRiskSnapshot = {
+  initial_bank_ars: number | string;
+  bank_ars: number | string;
+  pnl_ars: number | string;
+  settled_stake_ars: number | string;
+  roi: number | string | null;
+  avg_clv: number | string | null;
+  settled_count: number;
+  open_stake_ars: number | string;
+  open_count: number;
+  open_exposure_pct: number | string | null;
+};
+
+export async function getRiskSnapshot() {
+  return requestJson<MaurilioRiskSnapshot>("rpc/maurilio_risk_snapshot", {
+    method: "POST",
+    body: {},
+  });
+}
