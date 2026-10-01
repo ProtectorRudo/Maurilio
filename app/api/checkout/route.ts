@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentMatchday } from "@/lib/demo-data";
 import {
   databaseConfigured,
+  getLatestPublishedMatchday,
   getPublishedPickByTier,
   insertOrder,
   updateOrderByExternalReference,
@@ -60,14 +60,17 @@ export async function GET() {
 
   if (databaseConfigured()) {
     try {
-      const [proPick, elitePick] = await Promise.all([
-        getPublishedPickByTier(currentMatchday.slug, "pro"),
-        getPublishedPickByTier(currentMatchday.slug, "elite"),
-      ]);
-      availability = {
-        pro: Boolean(proPick),
-        elite: Boolean(elitePick),
-      };
+      const activeMatchday = await getLatestPublishedMatchday();
+      if (activeMatchday) {
+        const [proPick, elitePick] = await Promise.all([
+          getPublishedPickByTier(activeMatchday.slug, "pro"),
+          getPublishedPickByTier(activeMatchday.slug, "elite"),
+        ]);
+        availability = {
+          pro: Boolean(proPick),
+          elite: Boolean(elitePick),
+        };
+      }
     } catch {
       availability = { pro: false, elite: false };
     }
@@ -122,8 +125,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const activeMatchday = await getLatestPublishedMatchday().catch(() => null);
+  if (!activeMatchday) {
+    return NextResponse.json(
+      { error: "no_active_matchday" },
+      { status: 409 },
+    );
+  }
+
   const publishedPick = await getPublishedPickByTier(
-    currentMatchday.slug,
+    activeMatchday.slug,
     tier,
   ).catch(() => null);
 
@@ -140,13 +151,13 @@ export async function POST(request: NextRequest) {
     : crypto.randomUUID();
 
   const externalReference =
-    `maurilio_${currentMatchday.slug}_${tier}_${crypto.randomUUID()}`;
+    `maurilio_${activeMatchday.slug}_${tier}_${crypto.randomUUID()}`;
 
   try {
     await insertOrder({
       external_reference: externalReference,
       subject_id: subjectId,
-      matchday_slug: currentMatchday.slug,
+      matchday_slug: activeMatchday.slug,
       tier,
       amount_ars: amount,
     });
