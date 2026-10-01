@@ -44,6 +44,10 @@ type PremiumReport = {
   risk: string | null;
   capturedAt: string | null;
   eventStartAt: string | null;
+  saleStatus: "open" | "closed";
+  saleClosedReason: string | null;
+  lastObservedOdds: number | null;
+  lastObservedAt: string | null;
 };
 
 const BASE_PATH = "/maurilio";
@@ -151,7 +155,9 @@ export default function PremiumAccessModal({
       setError(
         err instanceof Error && err.message === "event_started"
           ? "El evento ya comenzó. La venta de este informe quedó cerrada automáticamente."
-          : "No pudimos iniciar el pago. No se realizó ningún cargo.",
+          : err instanceof Error && err.message === "sale_closed"
+            ? "La venta fue cerrada por gestión de riesgo. No se realizó ningún cargo."
+            : "No pudimos iniciar el pago. No se realizó ningún cargo.",
       );
       setStarting(false);
     }
@@ -250,6 +256,16 @@ export default function PremiumAccessModal({
               <span>MEJOR RAZÓN PARA NO ENTRAR</span>
               <p>{report.risk || "Sin riesgo principal publicado."}</p>
             </div>
+
+            {report.saleStatus === "closed" && (
+              <div className="premium-sale-closed">
+                <b>ENTRY CLOSED</b>
+                <span>{report.saleClosedReason ?? "risk stop"}</span>
+                {report.lastObservedOdds && (
+                  <span>BET365 OBSERVADA @{report.lastObservedOdds.toFixed(2)}</span>
+                )}
+              </div>
+            )}
 
             <div className="premium-proof">
               <span>ID {report.id}</span>
