@@ -18,6 +18,7 @@ export type Pick = {
   risk: string;
   bookmaker: "Bet365";
   capturedAt: string;
+  eventStartAt: string;
 };
 
 export type ArchiveEntry = {
