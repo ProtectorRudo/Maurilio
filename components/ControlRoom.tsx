@@ -22,6 +22,7 @@ type PickDraft = {
   thesis: string;
   principalRisk: string;
   oddsCapturedAt: string;
+  eventStartAt: string;
 };
 
 type MatchdayDraft = {
@@ -85,6 +86,7 @@ function pickTemplate(tier: Tier, index: number, date = todayInput()): PickDraft
     thesis: "",
     principalRisk: "",
     oddsCapturedAt: localDateTimeInput(),
+    eventStartAt: "",
   };
 }
 
@@ -204,6 +206,10 @@ export default function ControlRoom() {
                   typeof row.odds_captured_at === "string"
                     ? new Date(String(row.odds_captured_at)).toISOString().slice(0, 16)
                     : localDateTimeInput(),
+                eventStartAt:
+                  typeof row.event_start_at === "string"
+                    ? new Date(String(row.event_start_at)).toISOString().slice(0, 16)
+                    : "",
               };
             }),
           );
@@ -314,6 +320,7 @@ export default function ControlRoom() {
           thesis: pick.thesis,
           principalRisk: pick.principalRisk,
           oddsCapturedAt: new Date(pick.oddsCapturedAt).toISOString(),
+          eventStartAt: new Date(pick.eventStartAt).toISOString(),
         })),
       };
 
@@ -590,6 +597,16 @@ export default function ControlRoom() {
               </div>
 
               <label>
+                Inicio del evento
+                <input
+                  type="datetime-local"
+                  value={activePick.eventStartAt}
+                  onChange={(e) => updatePick(activeTier, "eventStartAt", e.target.value)}
+                  required={activePick.enabled}
+                />
+              </label>
+
+              <label>
                 Tesis
                 <textarea
                   rows={4}
@@ -623,6 +640,10 @@ export default function ControlRoom() {
                 <div><small>EV</small><b className={metrics.ev > 0 ? "metric-positive" : ""}>{metrics.ev >= 0 ? "+" : ""}{metrics.ev.toFixed(1)}%</b></div>
                 <div><small>EV PISO</small><b className={metrics.lowerEv > 0 ? "metric-positive" : "metric-negative"}>{metrics.lowerEv >= 0 ? "+" : ""}{metrics.lowerEv.toFixed(1)}%</b></div>
                 <div><small>SEÑAL</small><b className={metrics.lowerEv > 0 ? "metric-positive" : "metric-negative"}>{metrics.lowerEv > 0 ? "ROBUSTA" : "FRÁGIL"}</b></div>
+              </div>
+              <div className="preview-event-time">
+                <small>INICIO EVENTO</small>
+                <p>{activePick.eventStartAt ? new Date(activePick.eventStartAt).toLocaleString("es-AR") : "Pendiente."}</p>
               </div>
               <div className="preview-thesis">
                 <small>TESIS</small>
