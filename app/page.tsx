@@ -1,5 +1,6 @@
 import Matchday from "@/components/Matchday";
 import NoValueMatchday from "@/components/NoValueMatchday";
+import WaitingMatchday from "@/components/WaitingMatchday";
 import { currentMatchday } from "@/lib/demo-data";
 import type { Matchday as MatchdayData, Pick } from "@/lib/types";
 import {
@@ -65,23 +66,24 @@ function mapFreePick(row: MaurilioPickRow): Pick | null {
 async function persistedMatchday(): Promise<
   | { kind: "matchday"; data: MatchdayData }
   | { kind: "no_value"; label: string }
+  | { kind: "idle" }
   | null
 > {
   if (!databaseConfigured()) return null;
 
   try {
     const active = await getLatestPublishedMatchday();
-    if (!active) return null;
+    if (!active) return { kind: "idle" };
 
     if (active.no_value) {
       return { kind: "no_value", label: active.label };
     }
 
     const freeRow = await getPublishedPickByTier(active.slug, "free");
-    if (!freeRow) return null;
+    if (!freeRow) return { kind: "idle" };
 
     const freePick = mapFreePick(freeRow);
-    if (!freePick) return null;
+    if (!freePick) return { kind: "idle" };
 
     return {
       kind: "matchday",
@@ -119,6 +121,10 @@ export default async function Home() {
 
   if (persisted?.kind === "matchday") {
     return <Matchday matchday={persisted.data} isDemo={false} />;
+  }
+
+  if (persisted?.kind === "idle") {
+    return <WaitingMatchday />;
   }
 
   return <Matchday matchday={currentMatchday} isDemo />;
