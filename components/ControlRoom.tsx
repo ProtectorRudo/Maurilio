@@ -31,6 +31,19 @@ type MatchdayDraft = {
   noValue: boolean;
 };
 
+type RiskSnapshot = {
+  initial_bank_ars: number | string;
+  bank_ars: number | string;
+  pnl_ars: number | string;
+  settled_stake_ars: number | string;
+  roi: number | string | null;
+  avg_clv: number | string | null;
+  settled_count: number;
+  open_stake_ars: number | string;
+  open_count: number;
+  open_exposure_pct: number | string | null;
+};
+
 const BASE_PATH = "/maurilio";
 
 function localDateTimeInput() {
@@ -89,6 +102,22 @@ function numberField(value: string) {
   return Number.isFinite(n) ? n : null;
 }
 
+function ars(value: number | string | null | undefined) {
+  const numeric = Number(value ?? 0);
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  }).format(Number.isFinite(numeric) ? numeric : 0);
+}
+
+function percent(value: number | string | null | undefined) {
+  if (value === null || value === undefined) return "—";
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return "—";
+  return `${numeric >= 0 ? "+" : ""}${(numeric * 100).toFixed(2)}%`;
+}
+
 export default function ControlRoom() {
   const date = todayInput();
   const [matchday, setMatchday] = useState<MatchdayDraft>({
@@ -103,6 +132,7 @@ export default function ControlRoom() {
     pickTemplate("elite", 3),
   ]);
   const [activeTier, setActiveTier] = useState<Tier>("free");
+  const [risk, setRisk] = useState<RiskSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -123,10 +153,13 @@ export default function ControlRoom() {
             no_value: boolean;
           } | null;
           picks: Array<Record<string, unknown>>;
+          risk: RiskSnapshot | null;
         }>;
       })
       .then((data) => {
-        if (!data?.matchday) return;
+        if (!data) return;
+        setRisk(data.risk ?? null);
+        if (!data.matchday) return;
 
         setMatchday({
           slug: data.matchday.slug,
@@ -299,6 +332,17 @@ export default function ControlRoom() {
 
   return (
     <form className="control-ops" onSubmit={publish}>
+      {risk && (
+        <section className="control-risk-strip">
+          <article><small>BANCA VIVA</small><b>{ars(risk.bank_ars)}</b></article>
+          <article><small>P&L</small><b>{ars(risk.pnl_ars)}</b></article>
+          <article><small>ROI</small><b>{percent(risk.roi)}</b></article>
+          <article><small>CLV MEDIO</small><b>{percent(risk.avg_clv)}</b></article>
+          <article><small>EXPOSICIÓN ABIERTA</small><b>{percent(risk.open_exposure_pct)}</b></article>
+          <article><small>PICKS LIQUIDADOS</small><b>{risk.settled_count}</b></article>
+        </section>
+      )}
+
       <section className="control-matchday-bar">
         <div>
           <span className="section-kicker">MATCHDAY</span>
@@ -471,7 +515,19 @@ export default function ControlRoom() {
                   <input
                     inputMode="decimal"
                     value={activePick.stakePct}
-                    onChange={(e) => updatePick(activeTier, "stakePct", e.target.value)}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      updatePick(activeTier, "stakePct", next);
+                      const bank = Number(risk?.bank_ars ?? 0);
+                      const pct = Number(next);
+                      if (Number.isFinite(bank) && bank > 0 && Number.isFinite(pct)) {
+                        updatePick(
+                          activeTier,
+                          "stakeArs",
+                          String(Math.round(bank * (pct / 100))),
+                        );
+                      }
+                    }}
                   />
                 </label>
                 <label>
@@ -533,6 +589,15 @@ export default function ControlRoom() {
                 <small>ADVERSARIAL CHECK</small>
                 <p>{activePick.principalRisk || "Pendiente."}</p>
               </div>
+              {risk && (
+                <div className="preview-risk-budget">
+                  <small>RISK BUDGET</small>
+                  <p>
+                    Máx. por pick: {ars(Number(risk.bank_ars) * 0.02)} ·
+                    Máx. simultáneo: {ars(Number(risk.bank_ars) * 0.06)}
+                  </p>
+                </div>
+              )}
             </aside>
           </section>
         </>
