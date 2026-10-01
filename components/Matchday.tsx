@@ -27,6 +27,18 @@ function Icon({ name }: { name: "shield" | "chart" | "lock" | "arrow" | "check" 
   return <svg {...common}><circle cx="12" cy="12" r="9"/><path d="M8.5 5.2l3.5 2.5 3.5-2.5"/><path d="M7 14l2-4.2h6L17 14l-5 3.7z"/><path d="M4 10l5 .2"/><path d="M20 10l-5 .2"/></svg>;
 }
 
+function eventLabel(value: string) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat("es-AR", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(parsed) + " ART";
+}
+
 function capturedLabel(value: string) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
@@ -64,8 +76,20 @@ export default function Matchday({ matchday = currentMatchday, isDemo = true }: 
   const [phase, setPhase] = useState<Phase>("idle");
   const [lockedTier, setLockedTier] = useState<LockedTier>(null);
   const [activeAudit, setActiveAudit] = useState(0);
+  const [eventStarted, setEventStarted] = useState(false);
   const transitionTimer = useRef<number | null>(null);
   const pick = matchday.picks[0];
+
+  useEffect(() => {
+    if (isDemo) return;
+    const starts = new Date(pick.eventStartAt).getTime();
+    if (!Number.isFinite(starts)) return;
+
+    const refresh = () => setEventStarted(Date.now() >= starts);
+    refresh();
+    const interval = window.setInterval(refresh, 30_000);
+    return () => window.clearInterval(interval);
+  }, [isDemo, pick.eventStartAt]);
 
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("open");
@@ -240,10 +264,18 @@ export default function Matchday({ matchday = currentMatchday, isDemo = true }: 
 
             {phase === "revealed" && (
               <div className="revealed-state reveal-enter">
-                <div className="decision-line"><span>QUANT DECISION</span><b>VALUE DETECTED</b></div>
+                <div className="decision-line">
+                  <span>QUANT DECISION</span>
+                  <b>{eventStarted ? "EVENT STARTED · AUDIT MODE" : "VALUE DETECTED"}</b>
+                </div>
                 <span className="demo-badge">{isDemo ? "DATOS DEMO · ESTRUCTURA LISTA PARA PRODUCCIÓN" : "PICK PUBLICADO · REGISTRO ACTIVO"}</span>
                 <small className="competition">{pick.competition}</small>
                 <h3>{pick.event}</h3>
+                <div className="event-window">
+                  <span>INICIO</span>
+                  <b>{isDemo ? "HORARIO NO VERIFICADO" : eventLabel(pick.eventStartAt)}</b>
+                  {!isDemo && eventStarted && <em>MERCADO CERRADO</em>}
+                </div>
                 <div className="pick-main">
                   <div><small>MERCADO</small><strong>{pick.market}</strong></div>
                   <div className="price-box"><small>BET365</small><strong>@{pick.price}</strong></div>
