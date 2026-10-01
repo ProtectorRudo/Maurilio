@@ -14,6 +14,7 @@ Current Maurilio migration versions:
 7. `20261001231244_harden_maurilio_publish_transition.sql`
 8. `20261001231515_enforce_maurilio_publication_immutability.sql`
 9. `20261001232514_enforce_maurilio_robust_lower_bound.sql`
+10. `20261001233143_add_maurilio_event_start_gate.sql`
 
 The final migration contains the canonical publication RPC and immutability
 triggers. Earlier publication migrations are retained to match applied migration
@@ -30,7 +31,8 @@ covers the critical lifecycle:
 - server-calculated settlement P&L;
 - next Matchday allowed after settlement;
 - canonical bankroll/risk snapshot;
-- rejection of fragile signals whose lower probability bound has non-positive EV.
+- rejection of fragile signals whose lower probability bound has non-positive EV;
+- rejection of late Bet365 captures and picks published after event start.
 
 Run it only against a test/disposable environment or an explicitly authorized SQL
 session.
