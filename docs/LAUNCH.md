@@ -23,6 +23,10 @@ The Viralio production project should rewrite `/maurilio/:path*` to the Maurilio
 ```env
 NEXT_PUBLIC_SITE_URL=https://viralio.net/maurilio
 MAURILIO_ADMIN_PREVIEW=0
+MAURILIO_ADMIN_SECRET=<server-only-secret-min-24-chars>
+
+SUPABASE_URL=https://<project>.supabase.co
+SUPABASE_SECRET_KEY=<server-only-secret>
 
 MAURILIO_CHECKOUT_ENABLED=0
 MAURILIO_PRO_PRICE_ARS=
@@ -58,17 +62,32 @@ The return URL is **never** proof of payment.
 
 ## Control Room
 
-`/maurilio/control-room` returns 404 in production unless:
+`/maurilio/control-room` is protected by a signed HTTP-only admin session.
+
+Production requires:
 
 ```env
-MAURILIO_ADMIN_PREVIEW=1
+MAURILIO_ADMIN_SECRET=<minimum-24-character-server-secret>
 ```
 
-This flag is for controlled preview only. Before real publishing actions are added, replace this with authenticated authorization.
+Admin publication and settlement actions additionally enforce same-origin requests.
 
-## Database plan
+The Control Room now supports:
 
-Use an isolated Maurilio namespace/schema or dedicated tables. Minimum entities:
+- live bankroll / P&L / ROI / CLV
+- FREE / PRO / ELITE publication
+- NO VALUE Matchdays
+- 2% per-pick and 6% simultaneous exposure enforcement
+- immutable publication
+- Bet365 closing-price settlement
+- automatic P&L calculation
+
+`MAURILIO_ADMIN_PREVIEW=1` is only a non-production preview escape hatch; it does
+not bypass admin authentication for production write actions.
+
+## Database implementation
+
+Maurilio uses isolated tables in the existing Supabase project:
 
 - matchdays
 - picks
@@ -76,15 +95,17 @@ Use an isolated Maurilio namespace/schema or dedicated tables. Minimum entities:
 - entitlements
 - ledger_entries
 
-Requirements:
+Implemented invariants:
 
-- immutable publication timestamp for picks
+- immutable published Matchdays and pick thesis/price/model fields
 - server-stored Bet365 capture time and price
-- order provider ID unique constraint
+- unique provider order IDs
 - idempotent webhook processing
 - entitlement status independent of browser redirects
-- audit trail for result, closing price and CLV
-- row-level authorization for any exposed tables
+- audit trail for result, Bet365 closing price, P&L and CLV
+- row-level access denied to anon/authenticated
+- only service-role execution for publication, settlement and risk snapshot RPCs
+- no new Matchday while a previous Matchday still has open picks
 
 ## Release gate
 
@@ -139,4 +160,9 @@ The value must be a bare HTTPS origin. When missing or invalid, no Maurilio rewr
 5. Configure Mercado Pago Order webhook to `https://viralio.net/maurilio/api/webhooks/mercadopago`.
 6. Test success, pending, failure, duplicate webhook and refund/revocation paths with test credentials.
 7. Set Viralio `MAURILIO_ORIGIN` to the verified Maurilio deployment origin.
-8. Only after the above, set `MAURILIO_CHECKOUT_ENABLED=1`.
+8. Configure `MAURILIO_ADMIN_SECRET` and verify Control Room login.
+9. Publish a test NO VALUE Matchday and verify the fail-closed public state.
+10. Publish/settle a test pick with test infrastructure and confirm ledger metrics.
+11. Only after the above, set `MAURILIO_CHECKOUT_ENABLED=1`.
+
+Operational procedure: see `docs/OPERATIONS.md`.
