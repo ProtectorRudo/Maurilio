@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { archiveEntries } from "@/lib/demo-data";
 import {
   databaseConfigured,
+  getRiskSnapshot,
   getSettledLedger,
+  type MaurilioRiskSnapshot,
   type SettledLedgerRow,
 } from "@/lib/server/supabase-rest";
 
@@ -13,8 +15,6 @@ export const metadata: Metadata = {
   description:
     "Ledger auditable de selecciones, precio de entrada, CLV y resultado.",
 };
-
-const INITIAL_BANK = 100_000;
 
 function numeric(value: number | string | null) {
   if (value === null) return null;
@@ -73,39 +73,32 @@ function realEntry(row: SettledLedgerRow) {
 }
 
 export default async function ArchivePage() {
+  const databaseReady = databaseConfigured();
   let settled: SettledLedgerRow[] = [];
-  if (databaseConfigured()) {
-    try {
-      settled = await getSettledLedger(250);
-    } catch {
-      settled = [];
-    }
+  let risk: MaurilioRiskSnapshot | null = null;
+
+  if (databaseReady) {
+    const [ledgerResult, riskResult] = await Promise.allSettled([
+      getSettledLedger(250),
+      getRiskSnapshot(),
+    ]);
+    settled =
+      ledgerResult.status === "fulfilled" ? ledgerResult.value : [];
+    risk =
+      riskResult.status === "fulfilled" ? riskResult.value : null;
   }
 
-  const hasRealLedger = settled.length > 0;
-  const entries = hasRealLedger ? settled.map(realEntry) : archiveEntries;
+  const settledCount = risk?.settled_count ?? settled.length;
+  const hasRealLedger = settledCount > 0;
+  const entries = databaseReady ? settled.map(realEntry) : archiveEntries;
 
-  const pnl = settled.reduce(
-    (sum, row) => sum + (numeric(row.pnl_ars) ?? 0),
-    0,
-  );
-  const totalStake = settled.reduce(
-    (sum, row) => sum + (numeric(row.stake_ars) ?? 0),
-    0,
-  );
-  const clvValues = settled.flatMap((row) => {
-    const entry = numeric(row.entry_odds);
-    const close = numeric(row.closing_odds);
-    return entry !== null && close !== null && close > 0
-      ? [(entry / close - 1) * 100]
-      : [];
-  });
-  const averageClv =
-    clvValues.length > 0
-      ? clvValues.reduce((sum, value) => sum + value, 0) / clvValues.length
-      : null;
-  const roi = totalStake > 0 ? (pnl / totalStake) * 100 : null;
-  const bank = INITIAL_BANK + pnl;
+  const initialBank = numeric(risk?.initial_bank_ars ?? null) ?? 100_000;
+  const bank = numeric(risk?.bank_ars ?? null) ?? initialBank;
+  const pnl = numeric(risk?.pnl_ars ?? null) ?? 0;
+  const roiRaw = numeric(risk?.roi ?? null);
+  const avgClvRaw = numeric(risk?.avg_clv ?? null);
+  const roi = roiRaw === null ? null : roiRaw * 100;
+  const averageClv = avgClvRaw === null ? null : avgClvRaw * 100;
 
   return (
     <main className="ledger-page">
@@ -129,13 +122,13 @@ export default async function ArchivePage() {
       <section className="ledger-stats">
         <article>
           <small>BANCA</small>
-          <strong>{hasRealLedger ? ars(bank) : ars(INITIAL_BANK)}</strong>
-          <span>{hasRealLedger ? "ACTUALIZADA POR P&L" : "BASE PRE-LAUNCH"}</span>
+          <strong>{ars(bank)}</strong>
+          <span>{hasRealLedger ? "ACTUALIZADA POR P&L" : "BASE INICIAL"}</span>
         </article>
         <article>
           <small>P&L</small>
           <strong>{hasRealLedger ? ars(pnl) : "—"}</strong>
-          <span>{hasRealLedger ? `${settled.length} PICKS LIQUIDADOS` : "SIN REGISTRO REAL AÚN"}</span>
+          <span>{hasRealLedger ? `${settledCount} PICKS LIQUIDADOS` : "SIN PICKS LIQUIDADOS"}</span>
         </article>
         <article>
           <small>ROI</small>
@@ -156,9 +149,11 @@ export default async function ArchivePage() {
             <h2>Selecciones registradas</h2>
           </div>
           <span className="demo-badge">
-            {hasRealLedger
-              ? "REGISTRO REAL · SOLO PICKS LIQUIDADOS"
-              : "PRE-LAUNCH · SIN RESULTADOS REALES"}
+            {databaseReady
+              ? hasRealLedger
+                ? "REGISTRO REAL · SOLO PICKS LIQUIDADOS"
+                : "REGISTRO REAL · AÚN SIN LIQUIDACIONES"
+              : "PRE-LAUNCH · DATOS DEMO"}
           </span>
         </div>
 
@@ -167,19 +162,25 @@ export default async function ArchivePage() {
             <span>ID</span><span>FECHA</span><span>EVENTO</span><span>MERCADO</span>
             <span>CUOTA</span><span>EDGE</span><span>CLV</span><span>RESULTADO</span><span>P&L</span>
           </div>
-          {entries.map((entry) => (
-            <div className="archive-row" key={entry.id}>
-              <span>{entry.id}</span>
-              <span>{entry.date}</span>
-              <span>{entry.event}</span>
-              <span>{entry.market}</span>
-              <span>{entry.price}</span>
-              <span>{entry.edge}</span>
-              <span>{entry.clv}</span>
-              <b>{entry.result}</b>
-              <span>{entry.pnl}</span>
+          {entries.length > 0 ? (
+            entries.map((entry) => (
+              <div className="archive-row" key={entry.id}>
+                <span>{entry.id}</span>
+                <span>{entry.date}</span>
+                <span>{entry.event}</span>
+                <span>{entry.market}</span>
+                <span>{entry.price}</span>
+                <span>{entry.edge}</span>
+                <span>{entry.clv}</span>
+                <b>{entry.result}</b>
+                <span>{entry.pnl}</span>
+              </div>
+            ))
+          ) : (
+            <div className="ledger-empty-row">
+              Todavía no hay picks liquidados en el registro real.
             </div>
-          ))}
+          )}
         </div>
       </section>
 
