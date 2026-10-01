@@ -221,3 +221,6 @@ linear-gradient(180deg,#07100c,#050807 42%);padding-bottom:90px}
 .control-ops.is-published .tier-editor-tabs button{pointer-events:none;opacity:.58}
 .ledger-empty-row{padding:26px 16px;text-align:center;border-top:1px solid var(--line);color:#66726b;font:9px monospace;letter-spacing:.05em}
 @media(max-width:720px){.published-lock-banner{align-items:flex-start;flex-direction:column}}
+
+.metric-negative{color:var(--red)!important}
+.premium-range strong{color:inherit;font-weight:700}
