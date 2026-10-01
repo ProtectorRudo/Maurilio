@@ -80,13 +80,16 @@ export async function databaseReachable() {
   }
 }
 
-async function rest<T>(table: string, options: RestOptions = {}): Promise<T> {
+async function requestJson<T>(
+  path: string,
+  options: RestOptions = {},
+): Promise<T> {
   const config = databaseConfig();
   if (!config) throw new Error("database_not_configured");
 
   const query = options.query?.toString();
   const response = await fetch(
-    `${config.url}/rest/v1/${table}${query ? `?${query}` : ""}`,
+    `${config.url}/rest/v1/${path}${query ? `?${query}` : ""}`,
     {
       method: options.method ?? "GET",
       headers: {
@@ -103,7 +106,7 @@ async function rest<T>(table: string, options: RestOptions = {}): Promise<T> {
   const raw = await response.text();
   if (!response.ok) {
     console.error("Supabase REST request failed", {
-      table,
+      path,
       status: response.status,
       body: raw.slice(0, 500),
     });
@@ -112,6 +115,10 @@ async function rest<T>(table: string, options: RestOptions = {}): Promise<T> {
 
   if (!raw) return undefined as T;
   return JSON.parse(raw) as T;
+}
+
+async function rest<T>(table: string, options: RestOptions = {}): Promise<T> {
+  return requestJson<T>(table, options);
 }
 
 export async function insertOrder(input: {
@@ -345,4 +352,12 @@ export async function getSettledLedger(limit = 100) {
     limit: String(safeLimit),
   });
   return rest<SettledLedgerRow[]>("maurilio_picks", { query });
+}
+
+
+export async function publishMatchdayBundle(payload: Record<string, unknown>) {
+  return requestJson<string>("rpc/maurilio_publish_bundle", {
+    method: "POST",
+    body: { payload },
+  });
 }
