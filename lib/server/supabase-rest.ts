@@ -1,5 +1,14 @@
 type Json = Record<string, unknown> | Array<unknown>;
 
+export type MaurilioMatchdayRow = {
+  id: string;
+  slug: string;
+  match_date: string;
+  label: string;
+  status: "draft" | "published" | "settled" | "archived";
+  published_at: string | null;
+};
+
 export type MaurilioPickRow = {
   id: string;
   matchday_id: string;
@@ -266,6 +275,19 @@ export async function hasActiveEntitlement(
   return !row.expires_at || new Date(row.expires_at).getTime() > Date.now();
 }
 
+
+export async function getLatestPublishedMatchday() {
+  const query = new URLSearchParams({
+    select: "id,slug,match_date,label,status,published_at",
+    status: "eq.published",
+    order: "published_at.desc",
+    limit: "1",
+  });
+  const rows = await rest<MaurilioMatchdayRow[]>("maurilio_matchdays", {
+    query,
+  });
+  return rows[0] ?? null;
+}
 
 export async function getPublishedPickByTier(
   matchdaySlug: string,
