@@ -171,6 +171,10 @@ export default function PremiumAccessModal({
   }
 
   const elite = tier === "elite";
+  const lowerBoundEv =
+    report?.odds && report.probabilityRange
+      ? report.probabilityRange.low * report.odds - 1
+      : null;
 
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
@@ -214,6 +218,9 @@ export default function PremiumAccessModal({
             {report.probabilityRange && (
               <div className="premium-range">
                 RANGO MODELO · {percent(report.probabilityRange.low)} — {percent(report.probabilityRange.high)}
+                {lowerBoundEv !== null && (
+                  <strong> · EV PISO +{percent(lowerBoundEv)}</strong>
+                )}
               </div>
             )}
 
