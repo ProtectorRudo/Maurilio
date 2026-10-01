@@ -1,17 +1,20 @@
 # Maurilio Bet
 
-Experiencia web para **Maurilio — Quant Football**.
+Experiencia web y sistema operativo para **Maurilio — Quant Football**.
 
 ## Filosofía
 
-No vendemos certezas. Buscamos discrepancias entre probabilidad estimada y precio de mercado, con gestión de riesgo y registro auditable.
+No vendemos certezas. Buscamos discrepancias entre probabilidad estimada y precio
+Bet365, con gestión de riesgo, publicación inmutable y registro auditable.
 
 ## Stack
 
 - Next.js App Router
 - React
 - TypeScript
-- CSS nativo, sin librería visual externa
+- Supabase/PostgreSQL
+- Mercado Pago Orders
+- CSS nativo
 
 ## Desarrollo
 
@@ -20,14 +23,43 @@ npm install
 npm run dev
 ```
 
-## Estado
+## Estado actual
 
-Primera versión visual:
-- Home premium
-- Matchday con tres niveles
-- Reveal gratuito interactivo
-- Secuencia Quant Review
-- Ledger / transparencia
-- Responsive mobile
+Implementado:
 
-Los datos del pick actual son **demo** y deben conectarse al panel real antes de producción.
+- Home premium y Matchday
+- FREE reveal interactivo
+- PRO / ELITE protegidos por entitlement
+- Checkout Mercado Pago fail-closed
+- Webhook firmado + verificación independiente de order
+- Supabase con RLS y acceso server-only
+- Control Room autenticado
+- Publicación atómica de Matchdays
+- Jornada NO VALUE
+- Inmutabilidad de predicciones publicadas
+- Gestión de banca y límites 2% / 6%
+- Liquidación WIN / LOSS / PUSH / VOID
+- P&L calculado por servidor
+- CLV Bet365
+- Ledger público real
+- Healthcheck de producción
+- Reverse proxy preparado para `viralio.net/maurilio`
+
+En producción, los datos demo **nunca** se muestran como señal real cuando la base
+está configurada.
+
+## Operación
+
+Ver:
+
+- [Daily Operations Runbook](docs/OPERATIONS.md)
+- [Production Launch Contract](docs/LAUNCH.md)
+
+## Release gate
+
+Cada cambio en `main` debe pasar:
+
+```bash
+npm run typecheck
+npm run build
+```
