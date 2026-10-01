@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentMatchday } from "@/lib/demo-data";
 import {
   databaseConfigured,
+  getLatestPublishedMatchday,
   hasActiveEntitlement,
 } from "@/lib/server/supabase-rest";
 
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   if (!databaseConfigured() || !validUuid(subjectId)) {
     return NextResponse.json(
       {
-        matchday: currentMatchday.slug,
+        matchday: null,
         pro: false,
         elite: false,
       },
@@ -31,14 +31,22 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const activeMatchday = await getLatestPublishedMatchday();
+    if (!activeMatchday) {
+      return NextResponse.json(
+        { matchday: null, pro: false, elite: false },
+        { headers: { "Cache-Control": "private, no-store, max-age=0" } },
+      );
+    }
+
     const [pro, elite] = await Promise.all([
-      hasActiveEntitlement(subjectId!, currentMatchday.slug, "pro"),
-      hasActiveEntitlement(subjectId!, currentMatchday.slug, "elite"),
+      hasActiveEntitlement(subjectId!, activeMatchday.slug, "pro"),
+      hasActiveEntitlement(subjectId!, activeMatchday.slug, "elite"),
     ]);
 
     return NextResponse.json(
       {
-        matchday: currentMatchday.slug,
+        matchday: activeMatchday.slug,
         pro,
         elite,
       },
