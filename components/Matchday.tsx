@@ -1,23 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { currentMatchday } from "@/lib/demo-data";
 
-type Phase = "idle" | "checking" | "revealed";
+type Phase = "idle" | "kick" | "checking" | "revealed";
 type LockedTier = "pro" | "elite" | null;
-
-const demoPick = {
-  competition: "MAURILIO LAB · DEMO",
-  event: "Atlético Norte vs Unión Central",
-  market: "Más de 4.5 tarjetas",
-  price: "1.83",
-  minimum: "1.72",
-  implied: "54.6%",
-  model: "63.0%",
-  range: "58–67%",
-  edge: "+8.4%",
-  ev: "+15.3%",
-  stake: "0.75%",
-};
 
 const auditSteps = [
   "Contexto competitivo",
@@ -38,28 +25,68 @@ function Icon({ name }: { name: "shield" | "chart" | "lock" | "arrow" | "check" 
   return <svg {...common}><circle cx="12" cy="12" r="9"/><path d="M8.5 5.2l3.5 2.5 3.5-2.5"/><path d="M7 14l2-4.2h6L17 14l-5 3.7z"/><path d="M4 10l5 .2"/><path d="M20 10l-5 .2"/></svg>;
 }
 
+function playTone(frequency: number, duration = 0.1, gainValue = 0.025) {
+  try {
+    const AudioCtx = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const context = new AudioCtx();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.frequency.value = frequency;
+    oscillator.type = "sine";
+    gain.gain.setValueAtTime(gainValue, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + duration);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + duration);
+    window.setTimeout(() => void context.close(), Math.ceil(duration * 1000) + 150);
+  } catch {
+    // Sonido decorativo: nunca debe bloquear la experiencia.
+  }
+}
+
 export default function Matchday() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [lockedTier, setLockedTier] = useState<LockedTier>(null);
   const [activeAudit, setActiveAudit] = useState(0);
+  const transitionTimer = useRef<number | null>(null);
+  const pick = currentMatchday.picks[0];
 
   useEffect(() => {
     if (phase !== "checking") return;
     setActiveAudit(0);
     const interval = window.setInterval(() => {
       setActiveAudit((value) => Math.min(value + 1, auditSteps.length - 1));
-    }, 230);
+      playTone(370 + activeAudit * 35, 0.06, 0.012);
+    }, 260);
     const timer = window.setTimeout(() => {
       window.clearInterval(interval);
       setPhase("revealed");
-    }, 1650);
+      playTone(660, 0.13, 0.03);
+      window.setTimeout(() => playTone(880, 0.18, 0.025), 120);
+    }, 1900);
     return () => {
       window.clearInterval(interval);
       window.clearTimeout(timer);
     };
   }, [phase]);
 
-  const dateLabel = useMemo(() => "01 OCT · MATCHDAY 001", []);
+  useEffect(() => () => {
+    if (transitionTimer.current) window.clearTimeout(transitionTimer.current);
+  }, []);
+
+  const dateLabel = useMemo(() => currentMatchday.label, []);
+
+  function executeKick() {
+    if (phase !== "idle") return;
+    playTone(115, 0.09, 0.045);
+    setPhase("kick");
+    transitionTimer.current = window.setTimeout(() => {
+      playTone(210, 0.08, 0.02);
+      setPhase("checking");
+    }, 880);
+  }
 
   return (
     <main className="site-shell">
@@ -67,23 +94,18 @@ export default function Matchday() {
       <header className="nav">
         <a className="brand" href="#top" aria-label="Maurilio Bet">
           <span className="brand-mark">M</span>
-          <span>
-            <b>MAURILIO</b>
-            <small>QUANT FOOTBALL</small>
-          </span>
+          <span><b>MAURILIO</b><small>QUANT FOOTBALL</small></span>
         </a>
         <nav className="nav-links" aria-label="Principal">
           <a href="#matchday">Matchday</a>
           <a href="#method">Método</a>
-          <a href="#transparency">Registro</a>
+          <a href="/archive">Registro</a>
         </nav>
         <a className="nav-cta" href="#matchday">Entrar al vestuario <Icon name="arrow" /></a>
       </header>
 
       <section className="hero" id="top">
-        <div className="stadium-lights" aria-hidden="true">
-          <i/><i/><i/><i/><i/><i/>
-        </div>
+        <div className="stadium-lights" aria-hidden="true"><i/><i/><i/><i/><i/><i/></div>
         <div className="hero-grid">
           <div className="hero-copy">
             <div className="eyebrow"><span className="live-dot"/> {dateLabel}</div>
@@ -99,10 +121,7 @@ export default function Matchday() {
           </div>
 
           <aside className="terminal-card">
-            <div className="terminal-top">
-              <span>MAURILIO / QUANT DESK</span>
-              <span className="status-pill">ONLINE</span>
-            </div>
+            <div className="terminal-top"><span>MAURILIO / QUANT DESK</span><span className="status-pill">ONLINE</span></div>
             <div className="terminal-radar">
               <div className="radar-circle r1"/><div className="radar-circle r2"/>
               <div className="radar-line vertical"/><div className="radar-line horizontal"/>
@@ -128,96 +147,54 @@ export default function Matchday() {
 
       <section className="matchday-section" id="matchday">
         <div className="section-heading">
-          <div>
-            <span className="section-kicker">EL VESTUARIO</span>
-            <h2>Elegí tu nivel de lectura.</h2>
-          </div>
+          <div><span className="section-kicker">EL VESTUARIO</span><h2>Elegí tu nivel de lectura.</h2></div>
           <p>Un análisis abierto. Dos informes premium. La intensidad del stake nunca reemplaza la gestión de riesgo.</p>
         </div>
 
         <div className="tiers-grid">
           <article className="tier-card free-card">
             <div className="tier-glow"/>
-            <div className="tier-header">
-              <span className="tier-number">01</span>
-              <span className="unlocked"><Icon name="check"/> ABIERTO</span>
-            </div>
-            <div className="jersey jersey-free" aria-hidden="true">
-              <span className="jersey-neck"/>
-              <span className="jersey-brand">M</span>
-              <b>FREE</b>
-              <small>0.75%</small>
-            </div>
-            <div className="tier-copy">
-              <span className="tier-label">OPEN ANALYSIS</span>
-              <h3>Primera lectura</h3>
-              <p>Una oportunidad abierta para entender cómo pensamos antes de comprar nada.</p>
-            </div>
-            <button className="tier-action" onClick={() => document.getElementById("reveal")?.scrollIntoView({behavior:"smooth"})}>
-              Revelar análisis <Icon name="arrow"/>
-            </button>
+            <div className="tier-header"><span className="tier-number">01</span><span className="unlocked"><Icon name="check"/> ABIERTO</span></div>
+            <div className="jersey jersey-free" aria-hidden="true"><span className="jersey-neck"/><span className="jersey-brand">M</span><b>FREE</b><small>{pick.stake}</small></div>
+            <div className="tier-copy"><span className="tier-label">OPEN ANALYSIS</span><h3>Primera lectura</h3><p>Una oportunidad abierta para entender cómo pensamos antes de comprar nada.</p></div>
+            <button className="tier-action" onClick={() => document.getElementById("reveal")?.scrollIntoView({behavior:"smooth"})}>Revelar análisis <Icon name="arrow"/></button>
           </article>
 
           <article className="tier-card pro-card">
-            <div className="tier-header">
-              <span className="tier-number">02</span>
-              <span className="locked"><Icon name="lock"/> SELLADO</span>
-            </div>
-            <div className="jersey jersey-pro" aria-hidden="true">
-              <span className="jersey-neck"/>
-              <span className="jersey-brand">M</span>
-              <b>PRO</b>
-              <small>1.25%</small>
-            </div>
-            <div className="tier-copy">
-              <span className="tier-label">VAR AUDIT</span>
-              <h3>Convicción media</h3>
-              <p>Más señales alineadas, auditoría ampliada y precio mínimo explícito.</p>
-            </div>
-            <button className="tier-action ghost" onClick={() => setLockedTier("pro")}>
-              Desbloquear PRO <Icon name="lock"/>
-            </button>
+            <div className="tier-header"><span className="tier-number">02</span><span className="locked"><Icon name="lock"/> SELLADO</span></div>
+            <div className="jersey jersey-pro" aria-hidden="true"><span className="jersey-neck"/><span className="jersey-brand">M</span><b>PRO</b><small>1.25%</small></div>
+            <div className="tier-copy"><span className="tier-label">VAR AUDIT</span><h3>Convicción media</h3><p>Más señales alineadas, auditoría ampliada y precio mínimo explícito.</p></div>
+            <button className="tier-action ghost" onClick={() => setLockedTier("pro")}>Desbloquear PRO <Icon name="lock"/></button>
           </article>
 
           <article className="tier-card elite-card">
             <div className="elite-badge">HIGH CONVICTION</div>
-            <div className="tier-header">
-              <span className="tier-number">03</span>
-              <span className="locked fire"><Icon name="lock"/> PRIVATE</span>
-            </div>
-            <div className="jersey jersey-elite" aria-hidden="true">
-              <span className="jersey-neck"/>
-              <span className="jersey-brand">M</span>
-              <b>ELITE</b>
-              <small>1.75%</small>
-            </div>
-            <div className="tier-copy">
-              <span className="tier-label">THE LOCKER</span>
-              <h3>Máxima convicción</h3>
-              <p>Reservado para discrepancias excepcionales. Si no existe valor real, no aparece.</p>
-            </div>
-            <button className="tier-action elite-action" onClick={() => setLockedTier("elite")}>
-              Entrar a The Locker <Icon name="arrow"/>
-            </button>
+            <div className="tier-header"><span className="tier-number">03</span><span className="locked fire"><Icon name="lock"/> PRIVATE</span></div>
+            <div className="jersey jersey-elite" aria-hidden="true"><span className="jersey-neck"/><span className="jersey-brand">M</span><b>ELITE</b><small>1.75%</small></div>
+            <div className="tier-copy"><span className="tier-label">THE LOCKER</span><h3>Máxima convicción</h3><p>Reservado para discrepancias excepcionales. Si no existe valor real, no aparece.</p></div>
+            <button className="tier-action elite-action" onClick={() => setLockedTier("elite")}>Entrar a The Locker <Icon name="arrow"/></button>
           </article>
         </div>
       </section>
 
       <section className="reveal-section" id="reveal">
-        <div className="reveal-stage">
+        <div className={"reveal-stage reveal-" + phase}>
+          <div className="crowd-glow" aria-hidden="true"/>
           <div className="pitch-lines" aria-hidden="true"><span/><i/><b/></div>
           <div className="scoreboard">
             <div className="scoreboard-top"><span>MAURILIO MATCHDAY</span><span>FREE ACCESS</span></div>
 
-            {phase === "idle" && (
-              <div className="penalty-state">
+            {(phase === "idle" || phase === "kick") && (
+              <div className={"penalty-state " + (phase === "kick" ? "is-kicking" : "")}>
                 <div className="goal">
                   <span className="goal-net"/>
+                  <div className="goal-flash"/>
                   <div className="keeper">M</div>
+                  <span className="flying-ball"><Icon name="ball"/></span>
                 </div>
-                <button className="ball-button" onClick={() => setPhase("checking")} aria-label="Ejecutar penal y revelar análisis">
+                <button className="ball-button" onClick={executeKick} disabled={phase === "kick"} aria-label="Ejecutar penal y revelar análisis">
                   <span className="ball"><Icon name="ball"/></span>
-                  <b>TOCÁ PARA EJECUTAR</b>
+                  <b>{phase === "kick" ? "EJECUTANDO..." : "TOCÁ PARA EJECUTAR"}</b>
                   <small>El reveal comienza con una auditoría automática</small>
                 </button>
               </div>
@@ -230,8 +207,7 @@ export default function Matchday() {
                 <div className="audit-list">
                   {auditSteps.map((step, index) => (
                     <div className={index <= activeAudit ? "audit-row active" : "audit-row"} key={step}>
-                      <span>{String(index + 1).padStart(2, "0")}</span>
-                      <b>{step}</b>
+                      <span>{String(index + 1).padStart(2, "0")}</span><b>{step}</b>
                       <i>{index < activeAudit ? "CHECK" : index === activeAudit ? "READING" : "WAIT"}</i>
                     </div>
                   ))}
@@ -241,33 +217,28 @@ export default function Matchday() {
             )}
 
             {phase === "revealed" && (
-              <div className="revealed-state">
+              <div className="revealed-state reveal-enter">
                 <div className="decision-line"><span>QUANT DECISION</span><b>VALUE DETECTED</b></div>
-                <span className="demo-badge">DATOS DEMO · LISTO PARA CONECTAR AL PANEL REAL</span>
-                <small className="competition">{demoPick.competition}</small>
-                <h3>{demoPick.event}</h3>
+                <span className="demo-badge">DATOS DEMO · ESTRUCTURA LISTA PARA PRODUCCIÓN</span>
+                <small className="competition">{pick.competition}</small>
+                <h3>{pick.event}</h3>
                 <div className="pick-main">
-                  <div>
-                    <small>MERCADO</small>
-                    <strong>{demoPick.market}</strong>
-                  </div>
-                  <div className="price-box">
-                    <small>BET365</small>
-                    <strong>@{demoPick.price}</strong>
-                  </div>
+                  <div><small>MERCADO</small><strong>{pick.market}</strong></div>
+                  <div className="price-box"><small>BET365</small><strong>@{pick.price}</strong></div>
                 </div>
                 <div className="metrics-grid">
-                  <div><small>CUOTA MÍN.</small><b>{demoPick.minimum}</b></div>
-                  <div><small>IMPLÍCITA</small><b>{demoPick.implied}</b></div>
-                  <div className="accent-metric"><small>NUESTRO MODELO</small><b>{demoPick.model}</b><em>{demoPick.range}</em></div>
-                  <div><small>EDGE</small><b>{demoPick.edge}</b></div>
-                  <div><small>EV</small><b>{demoPick.ev}</b></div>
-                  <div><small>STAKE</small><b>{demoPick.stake}</b></div>
+                  <div><small>CUOTA MÍN.</small><b>{pick.minimum}</b></div>
+                  <div><small>IMPLÍCITA</small><b>{pick.implied}%</b></div>
+                  <div className="accent-metric"><small>NUESTRO MODELO</small><b>{pick.model}%</b><em>{pick.range}</em></div>
+                  <div><small>EDGE</small><b>+{pick.edge}%</b></div>
+                  <div><small>EV</small><b>+{pick.ev}%</b></div>
+                  <div><small>STAKE</small><b>{pick.stake}</b></div>
                 </div>
                 <div className="value-bars">
-                  <div><span>Mercado</span><i><b style={{width:"54.6%"}}/></i><strong>54.6%</strong></div>
-                  <div><span>Maurilio</span><i><b style={{width:"63%"}}/></i><strong>63.0%</strong></div>
+                  <div><span>Mercado</span><i><b style={{width: pick.implied + "%"}}/></i><strong>{pick.implied}%</strong></div>
+                  <div><span>Maurilio</span><i><b style={{width: pick.model + "%"}}/></i><strong>{pick.model}%</strong></div>
                 </div>
+                <div className="risk-note"><span>MEJOR RAZÓN PARA NO ENTRAR</span><p>{pick.risk}</p></div>
                 <button className="reset-button" onClick={() => setPhase("idle")}>Repetir experiencia</button>
               </div>
             )}
@@ -277,10 +248,7 @@ export default function Matchday() {
 
       <section className="method-section" id="method">
         <div className="section-heading compact">
-          <div>
-            <span className="section-kicker">MÉTODO MAURILIO</span>
-            <h2>No pronosticamos.<br/>Compramos probabilidades.</h2>
-          </div>
+          <div><span className="section-kicker">MÉTODO MAURILIO</span><h2>No pronosticamos.<br/>Compramos probabilidades.</h2></div>
           <p>Una selección sólo existe si sobrevive al modelo y al intento deliberado de demostrar que está mal.</p>
         </div>
         <div className="method-grid">
@@ -301,12 +269,13 @@ export default function Matchday() {
             <span className="section-kicker">LEDGER PÚBLICO</span>
             <h2>La confianza no se promete.<br/>Se deja auditar.</h2>
             <p>Ganadas y perdidas. Precio de entrada, cierre, CLV y aprendizaje. Sin borrar pronósticos incómodos.</p>
+            <a href="/archive" className="text-button">Abrir archivo completo</a>
           </div>
           <div className="ledger-preview">
             <div className="ledger-head"><span>ID</span><span>EDGE</span><span>CLV</span><span>STATUS</span></div>
-            <div><span>#M001</span><span>+8.4%</span><span>—</span><b>DEMO</b></div>
-            <div><span>#M002</span><span>—</span><span>—</span><em>LOCKED</em></div>
-            <div><span>#M003</span><span>—</span><span>—</span><em>LOCKED</em></div>
+            {currentMatchday.archivePreview.map((item) => (
+              <div key={item.id}><span>{item.id}</span><span>{item.edge}</span><span>{item.clv}</span><b>{item.status}</b></div>
+            ))}
           </div>
         </div>
       </section>
@@ -324,7 +293,7 @@ export default function Matchday() {
             <span className="modal-icon"><Icon name="lock"/></span>
             <small>{lockedTier === "elite" ? "THE LOCKER" : "VAR AUDIT"}</small>
             <h3>{lockedTier === "elite" ? "Acceso High Conviction" : "Acceso PRO"}</h3>
-            <p>La experiencia de pago ya tiene su entrada diseñada. El siguiente paso es conectar checkout, usuario y desbloqueo persistente.</p>
+            <p>La experiencia premium está preparada. Checkout y desbloqueo persistente se conectarán sobre esta misma interfaz.</p>
             <button className="primary-button modal-button" onClick={() => setLockedTier(null)}>Entendido</button>
           </div>
         </div>
