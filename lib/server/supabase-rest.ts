@@ -1,5 +1,29 @@
 type Json = Record<string, unknown> | Array<unknown>;
 
+export type MaurilioPickRow = {
+  id: string;
+  matchday_id: string;
+  public_id: string;
+  tier: "free" | "pro" | "elite";
+  sport: string;
+  competition: string;
+  event: string;
+  market: string;
+  selection: string | null;
+  bookmaker: "Bet365";
+  entry_odds: number | string | null;
+  minimum_odds: number | string | null;
+  probability_own: number | string | null;
+  probability_low: number | string | null;
+  probability_high: number | string | null;
+  stake_pct: number | string | null;
+  thesis: string | null;
+  principal_risk: string | null;
+  odds_captured_at: string | null;
+  status: "draft" | "published" | "void" | "settled";
+  published_at: string | null;
+};
+
 export type MaurilioOrderRow = {
   id: string;
   provider_order_id: string | null;
@@ -239,4 +263,36 @@ export async function hasActiveEntitlement(
   const row = rows[0];
   if (!row) return false;
   return !row.expires_at || new Date(row.expires_at).getTime() > Date.now();
+}
+
+
+export async function getPublishedPickByTier(
+  matchdaySlug: string,
+  tier: "free" | "pro" | "elite",
+) {
+  const matchdayQuery = new URLSearchParams({
+    select: "id",
+    slug: `eq.${matchdaySlug}`,
+    status: "eq.published",
+    limit: "1",
+  });
+  const matchdays = await rest<Array<{ id: string }>>("maurilio_matchdays", {
+    query: matchdayQuery,
+  });
+  const matchday = matchdays[0];
+  if (!matchday) return null;
+
+  const pickQuery = new URLSearchParams({
+    select:
+      "id,matchday_id,public_id,tier,sport,competition,event,market,selection,bookmaker,entry_odds,minimum_odds,probability_own,probability_low,probability_high,stake_pct,thesis,principal_risk,odds_captured_at,status,published_at",
+    matchday_id: `eq.${matchday.id}`,
+    tier: `eq.${tier}`,
+    status: "eq.published",
+    order: "published_at.desc",
+    limit: "1",
+  });
+  const picks = await rest<MaurilioPickRow[]>("maurilio_picks", {
+    query: pickQuery,
+  });
+  return picks[0] ?? null;
 }
