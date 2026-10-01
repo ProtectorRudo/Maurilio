@@ -1,0 +1,15 @@
+-- Historical migration marker.
+--
+-- This live migration hardened the publication RPC by:
+--   * blocking a new Matchday while a previous Matchday had open picks;
+--   * rejecting duplicate tiers;
+--   * enforcing <= 6% declared simultaneous exposure;
+--   * requiring positive stake_ars.
+--
+-- The canonical superseding RPC definition is intentionally versioned in the
+-- immediately following migration:
+-- 20261001231515_enforce_maurilio_publication_immutability.sql
+--
+-- Keeping this version marker aligned with the applied Supabase migration
+-- history prevents drift while reconstruction converges to the same final state.
+select 1;
