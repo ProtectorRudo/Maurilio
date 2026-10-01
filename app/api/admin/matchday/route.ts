@@ -100,6 +100,9 @@ function normalisePick(value: PublishPickInput) {
   if (probabilityOwn * entryOdds - 1 <= 0) {
     throw new Error("non_positive_ev");
   }
+  if (probabilityLow * entryOdds - 1 <= 0) {
+    throw new Error("fragile_lower_bound_non_positive_ev");
+  }
 
   const publicId = textValue(value.publicId);
   const competition = textValue(value.competition);
