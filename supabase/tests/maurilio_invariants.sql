@@ -34,7 +34,8 @@ select public.maurilio_publish_bundle(
         'stake_ars',1000,
         'thesis','Invariant thesis',
         'principal_risk','Invariant risk',
-        'odds_captured_at','2099-12-01T12:00:00-03:00'
+        'odds_captured_at','2099-12-01T12:00:00-03:00',
+        'event_start_at','2099-12-01T18:00:00-03:00'
       )
     )
   )
@@ -43,10 +44,16 @@ select public.maurilio_publish_bundle(
 insert into maurilio_invariant_results
 select
   'valid_publish',
-  exists(select 1 from public.maurilio_picks where public_id='CI-INVARIANT-FREE' and status='published'),
-  'valid published pick exists';
+  exists(
+    select 1
+    from public.maurilio_picks
+    where public_id='CI-INVARIANT-FREE'
+      and status='published'
+      and event_start_at='2099-12-01T18:00:00-03:00'::timestamptz
+  ),
+  'valid published pick exists with event start';
 
-do $
+do $$
 declare
   v_matchday_id uuid;
 begin
@@ -59,14 +66,16 @@ begin
       matchday_id, public_id, tier, sport, competition, event, market, selection,
       bookmaker, entry_odds, minimum_odds, probability_own, probability_low,
       probability_high, stake_pct, stake_ars, thesis, principal_risk,
-      odds_captured_at, status, published_at
+      odds_captured_at, event_start_at, status, published_at
     )
     values (
       v_matchday_id, 'CI-INVARIANT-FRAGILE', 'pro', 'football', 'TEST',
       'A vs B', 'Totals', 'Over', 'Bet365', 1.80, 1.70,
       0.60, 0.54, 0.66, 0.01, 1000,
       'Central value only', 'Lower bound loses value',
-      '2099-12-01T12:05:00-03:00', 'published', now()
+      '2099-12-01T12:05:00-03:00',
+      '2099-12-01T18:00:00-03:00',
+      'published', now()
     );
 
     insert into maurilio_invariant_results
@@ -79,7 +88,35 @@ begin
       sqlerrm
     );
   end;
-end $;
+
+  begin
+    insert into public.maurilio_picks (
+      matchday_id, public_id, tier, sport, competition, event, market, selection,
+      bookmaker, entry_odds, minimum_odds, probability_own, probability_low,
+      probability_high, stake_pct, stake_ars, thesis, principal_risk,
+      odds_captured_at, event_start_at, status, published_at
+    )
+    values (
+      v_matchday_id, 'CI-INVARIANT-LATE-CAPTURE', 'elite', 'football', 'TEST',
+      'A vs B', 'Totals', 'Over', 'Bet365', 2.00, 1.80,
+      0.60, 0.55, 0.65, 0.01, 1000,
+      'Timing test', 'Late price capture',
+      '2099-12-01T19:00:00-03:00',
+      '2099-12-01T18:00:00-03:00',
+      'published', now()
+    );
+
+    insert into maurilio_invariant_results
+    values ('reject_capture_after_event', false, 'unexpected insert');
+  exception when others then
+    insert into maurilio_invariant_results
+    values (
+      'reject_capture_after_event',
+      position('maurilio_published_pick_requires_future_event_window' in sqlerrm) > 0,
+      sqlerrm
+    );
+  end;
+end $$;
 
 do $$
 begin
@@ -87,9 +124,16 @@ begin
     update public.maurilio_picks
     set market='REWRITTEN'
     where public_id='CI-INVARIANT-FREE';
-    insert into maurilio_invariant_results values ('immutable_pick', false, 'unexpected update');
+
+    insert into maurilio_invariant_results
+    values ('immutable_pick', false, 'unexpected update');
   exception when others then
-    insert into maurilio_invariant_results values ('immutable_pick', sqlerrm='published_pick_is_immutable', sqlerrm);
+    insert into maurilio_invariant_results
+    values (
+      'immutable_pick',
+      sqlerrm='published_pick_is_immutable',
+      sqlerrm
+    );
   end;
 end $$;
 
@@ -105,9 +149,16 @@ begin
         'picks','[]'::jsonb
       )
     );
-    insert into maurilio_invariant_results values ('block_next_while_open', false, 'unexpected publish');
+
+    insert into maurilio_invariant_results
+    values ('block_next_while_open', false, 'unexpected publish');
   exception when others then
-    insert into maurilio_invariant_results values ('block_next_while_open', sqlerrm='previous_matchday_still_open', sqlerrm);
+    insert into maurilio_invariant_results
+    values (
+      'block_next_while_open',
+      sqlerrm='previous_matchday_still_open',
+      sqlerrm
+    );
   end;
 end $$;
 
@@ -133,9 +184,12 @@ begin
         'picks','[]'::jsonb
       )
     );
-    insert into maurilio_invariant_results values ('allow_next_after_settle', true, 'published');
+
+    insert into maurilio_invariant_results
+    values ('allow_next_after_settle', true, 'published');
   exception when others then
-    insert into maurilio_invariant_results values ('allow_next_after_settle', false, sqlerrm);
+    insert into maurilio_invariant_results
+    values ('allow_next_after_settle', false, sqlerrm);
   end;
 end $$;
 
