@@ -54,6 +54,14 @@ function localDateTimeInput() {
     .slice(0, 16);
 }
 
+function localInputFromIso(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 16);
+}
+
 function todayInput() {
   const now = new Date();
   return new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
@@ -204,11 +212,11 @@ export default function ControlRoom() {
                 principalRisk: String(row.principal_risk ?? ""),
                 oddsCapturedAt:
                   typeof row.odds_captured_at === "string"
-                    ? new Date(String(row.odds_captured_at)).toISOString().slice(0, 16)
+                    ? localInputFromIso(String(row.odds_captured_at))
                     : localDateTimeInput(),
                 eventStartAt:
                   typeof row.event_start_at === "string"
-                    ? new Date(String(row.event_start_at)).toISOString().slice(0, 16)
+                    ? localInputFromIso(String(row.event_start_at))
                     : "",
               };
             }),
