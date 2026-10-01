@@ -6,6 +6,7 @@ export type MaurilioMatchdayRow = {
   match_date: string;
   label: string;
   status: "draft" | "published" | "settled" | "archived";
+  no_value: boolean;
   published_at: string | null;
 };
 
@@ -285,7 +286,7 @@ export async function hasActiveEntitlement(
 
 export async function getLatestPublishedMatchday() {
   const query = new URLSearchParams({
-    select: "id,slug,match_date,label,status,published_at",
+    select: "id,slug,match_date,label,status,no_value,published_at",
     status: "eq.published",
     order: "published_at.desc",
     limit: "1",
