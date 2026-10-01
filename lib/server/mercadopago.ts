@@ -75,9 +75,9 @@ export async function createMercadoPagoOrder(input: {
       ],
       config: {
         online: {
-          success_url: `${input.siteUrl}/access/success`,
-          pending_url: `${input.siteUrl}/access/pending`,
-          failure_url: `${input.siteUrl}/access/failure`,
+          success_url: `${input.siteUrl}/access/success?tier=${input.tier}`,
+          pending_url: `${input.siteUrl}/access/pending?tier=${input.tier}`,
+          failure_url: `${input.siteUrl}/access/failure?tier=${input.tier}`,
         },
       },
     }),
