@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { currentMatchday } from "@/lib/demo-data";
+import PremiumAccessModal from "@/components/PremiumAccessModal";
 
 type Phase = "idle" | "kick" | "checking" | "revealed";
 type LockedTier = "pro" | "elite" | null;
@@ -287,16 +288,7 @@ export default function Matchday() {
       </footer>
 
       {lockedTier && (
-        <div className="modal-backdrop" onMouseDown={() => setLockedTier(null)}>
-          <div className="access-modal" onMouseDown={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setLockedTier(null)}>×</button>
-            <span className="modal-icon"><Icon name="lock"/></span>
-            <small>{lockedTier === "elite" ? "THE LOCKER" : "VAR AUDIT"}</small>
-            <h3>{lockedTier === "elite" ? "Acceso High Conviction" : "Acceso PRO"}</h3>
-            <p>La experiencia premium está preparada. Checkout y desbloqueo persistente se conectarán sobre esta misma interfaz.</p>
-            <button className="primary-button modal-button" onClick={() => setLockedTier(null)}>Entendido</button>
-          </div>
-        </div>
+        <PremiumAccessModal tier={lockedTier} onClose={() => setLockedTier(null)} />
       )}
     </main>
   );

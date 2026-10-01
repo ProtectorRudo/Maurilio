@@ -47,7 +47,7 @@ export default function Image() {
           <span style={{ color: "#69f39a", fontSize: 18, letterSpacing: 4, marginBottom: 22 }}>
             VALUE OVER NOISE
           </span>
-          <div style={{ fontSize: 68, lineHeight: 1.02, fontWeight: 800, letterSpacing: -4 }}>
+          <div style={{ display: "flex", flexDirection: "column", fontSize: 68, lineHeight: 1.02, fontWeight: 800, letterSpacing: -4 }}>
             El mercado pone el precio.
             <br />
             <span style={{ color: "#7f8e85" }}>Nosotros auditamos la probabilidad.</span>

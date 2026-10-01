@@ -18,6 +18,7 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  basePath: "/maurilio",
   reactStrictMode: true,
   poweredByHeader: false,
   async headers() {

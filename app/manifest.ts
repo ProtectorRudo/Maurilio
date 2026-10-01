@@ -5,13 +5,13 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Maurilio — Quant Football",
     short_name: "Maurilio",
     description: "Auditoría cuantitativa de mercados deportivos.",
-    start_url: "/",
+    start_url: "/maurilio",
     display: "standalone",
     background_color: "#050807",
     theme_color: "#07130e",
     icons: [
       {
-        src: "/icon.svg",
+        src: "/maurilio/icon.svg",
         sizes: "any",
         type: "image/svg+xml",
       },
