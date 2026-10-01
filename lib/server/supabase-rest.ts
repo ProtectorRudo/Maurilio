@@ -31,6 +31,7 @@ export type MaurilioPickRow = {
   thesis: string | null;
   principal_risk: string | null;
   odds_captured_at: string | null;
+  event_start_at: string | null;
   status: "draft" | "published" | "void" | "settled";
   published_at: string | null;
 };
@@ -315,7 +316,7 @@ export async function getPublishedPickByTier(
 
   const pickQuery = new URLSearchParams({
     select:
-      "id,matchday_id,public_id,tier,sport,competition,event,market,selection,bookmaker,entry_odds,minimum_odds,probability_own,probability_low,probability_high,stake_pct,stake_ars,thesis,principal_risk,odds_captured_at,status,published_at",
+      "id,matchday_id,public_id,tier,sport,competition,event,market,selection,bookmaker,entry_odds,minimum_odds,probability_own,probability_low,probability_high,stake_pct,stake_ars,thesis,principal_risk,odds_captured_at,event_start_at,status,published_at",
     matchday_id: `eq.${matchday.id}`,
     tier: `eq.${tier}`,
     status: "eq.published",
