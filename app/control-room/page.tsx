@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import AdminLogin from "@/components/AdminLogin";
 import ControlRoom from "@/components/ControlRoom";
+import SettlementPanel from "@/components/SettlementPanel";
 import {
   ADMIN_COOKIE,
   adminConfigured,
@@ -56,6 +57,7 @@ export default async function ControlRoomPage() {
         </p>
       </section>
       <ControlRoom />
+      <SettlementPanel />
     </main>
   );
 }
