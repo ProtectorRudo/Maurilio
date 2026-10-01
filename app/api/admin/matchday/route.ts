@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { sameOrigin } from "@/lib/server/request-security";
 import {
   ADMIN_COOKIE,
   verifyAdminSession,
@@ -92,6 +93,9 @@ function normalisePick(value: PublishPickInput) {
   if (stakePct === null || stakePct <= 0 || stakePct > 0.02) {
     throw new Error("invalid_stake");
   }
+  if (stakeArs === null || stakeArs <= 0) {
+    throw new Error("invalid_stake_ars");
+  }
   if (probabilityOwn * entryOdds - 1 <= 0) {
     throw new Error("non_positive_ev");
   }
@@ -176,6 +180,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!sameOrigin(request)) {
+    return NextResponse.json({ error: "invalid_origin" }, { status: 403 });
+  }
+
   if (!authorized(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
@@ -225,6 +233,17 @@ export async function POST(request: NextRequest) {
     const tiers = picks.map((pick) => pick.tier);
     if (new Set(tiers).size !== tiers.length) {
       return NextResponse.json({ error: "duplicate_tier" }, { status: 400 });
+    }
+
+    const totalExposure = picks.reduce(
+      (sum, pick) => sum + Number(pick.stake_pct),
+      0,
+    );
+    if (totalExposure > 0.06) {
+      return NextResponse.json(
+        { error: "simultaneous_exposure_over_6pct" },
+        { status: 400 },
+      );
     }
 
     const matchdayId = await publishMatchdayBundle({
