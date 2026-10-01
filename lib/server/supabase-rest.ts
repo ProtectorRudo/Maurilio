@@ -362,3 +362,25 @@ export async function publishMatchdayBundle(payload: Record<string, unknown>) {
     body: { payload },
   });
 }
+
+
+export async function settlePublishedPick(input: {
+  publicId: string;
+  result: "win" | "loss" | "push" | "void";
+  closingOdds: number | null;
+}) {
+  return requestJson<{
+    public_id: string;
+    result: string;
+    closing_odds: number | null;
+    pnl_ars: number;
+    matchday_status: string;
+  }>("rpc/maurilio_settle_pick", {
+    method: "POST",
+    body: {
+      p_public_id: input.publicId,
+      p_result: input.result,
+      p_closing_odds: input.closingOdds,
+    },
+  });
+}
