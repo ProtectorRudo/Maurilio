@@ -91,10 +91,12 @@ function pickTemplate(tier: Tier, index: number, date = todayInput()): PickDraft
 function metricValues(pick: PickDraft) {
   const odds = Number(pick.entryOdds);
   const own = Number(pick.probabilityOwn);
+  const low = Number(pick.probabilityLow);
   const implied = odds > 1 ? 100 / odds : 0;
   const edge = own - implied;
   const ev = odds > 1 ? (own / 100) * odds * 100 - 100 : 0;
-  return { implied, edge, ev };
+  const lowerEv = odds > 1 ? (low / 100) * odds * 100 - 100 : 0;
+  return { implied, edge, ev, lowerEv };
 }
 
 function numberField(value: string) {
@@ -619,6 +621,8 @@ export default function ControlRoom() {
                 <div><small>MODELO</small><b>{Number(activePick.probabilityOwn || 0).toFixed(1)}%</b></div>
                 <div><small>EDGE</small><b className={metrics.edge > 0 ? "metric-positive" : ""}>{metrics.edge >= 0 ? "+" : ""}{metrics.edge.toFixed(1)}%</b></div>
                 <div><small>EV</small><b className={metrics.ev > 0 ? "metric-positive" : ""}>{metrics.ev >= 0 ? "+" : ""}{metrics.ev.toFixed(1)}%</b></div>
+                <div><small>EV PISO</small><b className={metrics.lowerEv > 0 ? "metric-positive" : "metric-negative"}>{metrics.lowerEv >= 0 ? "+" : ""}{metrics.lowerEv.toFixed(1)}%</b></div>
+                <div><small>SEÑAL</small><b className={metrics.lowerEv > 0 ? "metric-positive" : "metric-negative"}>{metrics.lowerEv > 0 ? "ROBUSTA" : "FRÁGIL"}</b></div>
               </div>
               <div className="preview-thesis">
                 <small>TESIS</small>
@@ -683,7 +687,7 @@ export default function ControlRoom() {
 
       <p className="control-footnote">
         La publicación es atómica. Si cualquier pick viola Bet365, cuota mínima,
-        EV, rango, stake o auditoría, no se publica ningún cambio.
+        EV central, EV del límite inferior, rango, stake o auditoría, no se publica ningún cambio.
       </p>
     </form>
   );
