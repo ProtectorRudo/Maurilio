@@ -157,10 +157,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "database_unavailable" }, { status: 503 });
   }
 
-  const active = await getLatestPublishedMatchday().catch(() => null);
+  const [active, risk] = await Promise.all([
+    getLatestPublishedMatchday().catch(() => null),
+    getRiskSnapshot().catch(() => null),
+  ]);
   if (!active) {
     return NextResponse.json(
-      { matchday: null, picks: [] },
+      { matchday: null, picks: [], risk },
       { headers: { "Cache-Control": "private, no-store" } },
     );
   }
@@ -175,6 +178,7 @@ export async function GET(request: NextRequest) {
     {
       matchday: active,
       picks: [free, pro, elite].filter(Boolean),
+      risk,
     },
     { headers: { "Cache-Control": "private, no-store" } },
   );
