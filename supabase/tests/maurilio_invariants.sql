@@ -1,0 +1,118 @@
+-- Run against a disposable/test database or inside an authorized SQL session.
+-- Everything is wrapped in a transaction and rolled back.
+
+begin;
+
+create temporary table maurilio_invariant_results (
+  test_name text primary key,
+  passed boolean not null,
+  detail text
+) on commit drop;
+
+select public.maurilio_publish_bundle(
+  jsonb_build_object(
+    'slug','2099-12-01',
+    'match_date','2099-12-01',
+    'label','INVARIANT TEST',
+    'no_value',false,
+    'picks',jsonb_build_array(
+      jsonb_build_object(
+        'public_id','CI-INVARIANT-FREE',
+        'tier','free',
+        'sport','football',
+        'competition','TEST',
+        'event','A vs B',
+        'market','Over 1.5 goals',
+        'selection','Over 1.5',
+        'bookmaker','Bet365',
+        'entry_odds',2.00,
+        'minimum_odds',1.80,
+        'probability_own',0.60,
+        'probability_low',0.55,
+        'probability_high',0.65,
+        'stake_pct',0.01,
+        'stake_ars',1000,
+        'thesis','Invariant thesis',
+        'principal_risk','Invariant risk',
+        'odds_captured_at','2099-12-01T12:00:00-03:00'
+      )
+    )
+  )
+);
+
+insert into maurilio_invariant_results
+select
+  'valid_publish',
+  exists(select 1 from public.maurilio_picks where public_id='CI-INVARIANT-FREE' and status='published'),
+  'valid published pick exists';
+
+do $$
+begin
+  begin
+    update public.maurilio_picks
+    set market='REWRITTEN'
+    where public_id='CI-INVARIANT-FREE';
+    insert into maurilio_invariant_results values ('immutable_pick', false, 'unexpected update');
+  exception when others then
+    insert into maurilio_invariant_results values ('immutable_pick', sqlerrm='published_pick_is_immutable', sqlerrm);
+  end;
+end $$;
+
+do $$
+begin
+  begin
+    perform public.maurilio_publish_bundle(
+      jsonb_build_object(
+        'slug','2099-12-02',
+        'match_date','2099-12-02',
+        'label','BLOCKED',
+        'no_value',true,
+        'picks','[]'::jsonb
+      )
+    );
+    insert into maurilio_invariant_results values ('block_next_while_open', false, 'unexpected publish');
+  exception when others then
+    insert into maurilio_invariant_results values ('block_next_while_open', sqlerrm='previous_matchday_still_open', sqlerrm);
+  end;
+end $$;
+
+select public.maurilio_settle_pick('CI-INVARIANT-FREE','win',1.90);
+
+insert into maurilio_invariant_results
+select
+  'settlement_pnl',
+  status='settled' and result='win' and pnl_ars=1000 and closing_odds=1.90,
+  concat('status=',status,', pnl=',pnl_ars,', close=',closing_odds)
+from public.maurilio_picks
+where public_id='CI-INVARIANT-FREE';
+
+do $$
+begin
+  begin
+    perform public.maurilio_publish_bundle(
+      jsonb_build_object(
+        'slug','2099-12-02',
+        'match_date','2099-12-02',
+        'label','NO VALUE TEST',
+        'no_value',true,
+        'picks','[]'::jsonb
+      )
+    );
+    insert into maurilio_invariant_results values ('allow_next_after_settle', true, 'published');
+  exception when others then
+    insert into maurilio_invariant_results values ('allow_next_after_settle', false, sqlerrm);
+  end;
+end $$;
+
+insert into maurilio_invariant_results
+select
+  'risk_snapshot',
+  (payload->>'bank_ars')::numeric = 101000
+    and (payload->>'pnl_ars')::numeric = 1000
+    and (payload->>'settled_count')::int = 1,
+  payload::text
+from (select public.maurilio_risk_snapshot() payload) s;
+
+select * from maurilio_invariant_results order by test_name;
+
+rollback;
