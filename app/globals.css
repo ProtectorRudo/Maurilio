@@ -232,3 +232,10 @@ linear-gradient(180deg,#07100c,#050807 42%);padding-bottom:90px}
 @keyframes verifyPulse{70%{box-shadow:0 0 0 9px rgba(105,243,154,0)}100%{box-shadow:0 0 0 0 rgba(105,243,154,0)}}
 .pick-proof{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:9px;border-top:1px solid var(--line);padding-top:10px;font:7px monospace;letter-spacing:.08em}
 .pick-proof span{color:#6d786f}.pick-proof b{color:#909c94}
+
+/* --- Event timing gate --- */
+.event-window{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 12px;padding:9px 11px;border:1px solid var(--line);background:#070b08;border-radius:8px;font:8px monospace;letter-spacing:.07em}
+.event-window span{color:#59645d}.event-window b{color:#aab4ad}.event-window em{margin-left:auto;color:var(--red);font-style:normal;font-weight:700}
+.preview-event-time{border:1px solid var(--line);border-radius:8px;padding:11px;margin-top:8px}
+.preview-event-time small{display:block;color:#5d6961;font:7px monospace;letter-spacing:.08em;margin-bottom:5px}
+.preview-event-time p{margin:0;color:#9ba69f;font:9px monospace}
