@@ -60,6 +60,7 @@ function mapFreePick(row: MaurilioPickRow): Pick | null {
     risk: row.principal_risk ?? "Riesgo principal pendiente.",
     bookmaker: "Bet365",
     capturedAt: row.odds_captured_at ?? "NO VERIFICADO",
+    eventStartAt: row.event_start_at ?? "NO VERIFICADO",
   };
 }
 
