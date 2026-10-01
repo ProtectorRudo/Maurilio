@@ -60,7 +60,7 @@ function todayInput() {
     .slice(0, 10);
 }
 
-function pickTemplate(tier: Tier, index: number): PickDraft {
+function pickTemplate(tier: Tier, index: number, date = todayInput()): PickDraft {
   const defaults = {
     free: { probabilityOwn: "60", probabilityLow: "55", probabilityHigh: "65", stakePct: "0.75" },
     pro: { probabilityOwn: "62", probabilityLow: "57", probabilityHigh: "67", stakePct: "1.25" },
@@ -69,7 +69,7 @@ function pickTemplate(tier: Tier, index: number): PickDraft {
 
   return {
     enabled: tier === "free",
-    publicId: `M-${String(index).padStart(3, "0")}-${tier.toUpperCase()}`,
+    publicId: `M-${date.replaceAll("-", "")}-${tier.toUpperCase()}`,
     tier,
     competition: "",
     event: "",
@@ -132,6 +132,7 @@ export default function ControlRoom() {
     pickTemplate("elite", 3),
   ]);
   const [activeTier, setActiveTier] = useState<Tier>("free");
+  const [publishedLocked, setPublishedLocked] = useState(false);
   const [risk, setRisk] = useState<RiskSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
@@ -161,6 +162,7 @@ export default function ControlRoom() {
         setRisk(data.risk ?? null);
         if (!data.matchday) return;
 
+        setPublishedLocked(true);
         setMatchday({
           slug: data.matchday.slug,
           matchDate: data.matchday.match_date,
@@ -229,6 +231,30 @@ export default function ControlRoom() {
         pick.tier === tier ? { ...pick, [key]: value } : pick,
       ),
     );
+  }
+
+  function startNextDraft() {
+    const base = new Date(`${matchday.matchDate}T12:00:00`);
+    base.setDate(base.getDate() + 1);
+    const next = new Date(base.getTime() - base.getTimezoneOffset() * 60_000)
+      .toISOString()
+      .slice(0, 10);
+
+    setMatchday({
+      slug: next,
+      matchDate: next,
+      label: `${next} · MATCHDAY`,
+      noValue: false,
+    });
+    setPicks([
+      pickTemplate("free", 1, next),
+      pickTemplate("pro", 2, next),
+      pickTemplate("elite", 3, next),
+    ]);
+    setActiveTier("free");
+    setPublishedLocked(false);
+    setError(null);
+    setStatus("Nuevo borrador preparado. La jornada anterior sigue siendo inmutable.");
   }
 
   function saveLocal() {
@@ -331,7 +357,7 @@ export default function ControlRoom() {
   }
 
   return (
-    <form className="control-ops" onSubmit={publish}>
+    <form className={publishedLocked ? "control-ops is-published" : "control-ops"} onSubmit={publish}>
       {risk && (
         <section className="control-risk-strip">
           <article><small>BANCA VIVA</small><b>{ars(risk.bank_ars)}</b></article>
@@ -340,6 +366,19 @@ export default function ControlRoom() {
           <article><small>CLV MEDIO</small><b>{percent(risk.avg_clv)}</b></article>
           <article><small>EXPOSICIÓN ABIERTA</small><b>{percent(risk.open_exposure_pct)}</b></article>
           <article><small>PICKS LIQUIDADOS</small><b>{risk.settled_count}</b></article>
+        </section>
+      )}
+
+      {publishedLocked && (
+        <section className="published-lock-banner">
+          <div>
+            <span>PUBLICATION LOCK</span>
+            <b>MATCHDAY PUBLICADO · INMUTABLE</b>
+          </div>
+          <p>
+            Los datos publicados ya no pueden editarse. Liquidá los picks abiertos
+            o prepará el siguiente borrador.
+          </p>
         </section>
       )}
 
@@ -618,12 +657,21 @@ export default function ControlRoom() {
         <button type="button" className="text-button" onClick={saveLocal}>
           Guardar borrador local
         </button>
+        {publishedLocked && (
+          <button type="button" className="text-button" onClick={startNextDraft}>
+            Crear siguiente borrador
+          </button>
+        )}
         <button
           type="submit"
           className="primary-button"
-          disabled={publishing}
+          disabled={publishing || publishedLocked}
         >
-          {publishing ? "Publicando…" : "Publicar Matchday"}
+          {publishedLocked
+            ? "Matchday ya publicado"
+            : publishing
+              ? "Publicando…"
+              : "Publicar Matchday"}
         </button>
         <button type="button" className="text-button" onClick={logout}>
           Cerrar sesión
