@@ -58,6 +58,7 @@ Required fields for every published pick:
 - thesis
 - strongest reason not to enter
 - Bet365 capture timestamp
+- event start timestamp
 
 Publication is rejected when any of these rules fail:
 
@@ -66,6 +67,8 @@ Publication is rejected when any of these rules fail:
 - own probability/range is invalid
 - central EV is not positive
 - lower-bound EV is not positive (fragile signal)
+- Bet365 capture is not before event start
+- event has already started
 - stake is <= 0 or > 2%
 - simultaneous exposure is > 6%
 - stake ARS and stake % disagree with live bankroll
@@ -116,8 +119,12 @@ A premium tier is purchasable only if:
 
 1. an active Matchday exists;
 2. that tier has a published pick;
-3. checkout is explicitly enabled;
-4. Mercado Pago credentials and Supabase server credentials are configured.
+3. the event has not started;
+4. checkout is explicitly enabled;
+5. Mercado Pago credentials and Supabase server credentials are configured.
+
+At event start, premium sales close automatically. Existing verified entitlements
+remain valid for audit/review of the purchased report.
 
 Payment flow:
 
