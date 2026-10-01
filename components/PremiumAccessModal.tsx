@@ -13,6 +13,12 @@ type CheckoutConfig = {
   };
 };
 
+type AccessStatus = {
+  matchday: string;
+  pro: boolean;
+  elite: boolean;
+};
+
 const BASE_PATH = "/maurilio";
 
 export default function PremiumAccessModal({
@@ -23,24 +29,37 @@ export default function PremiumAccessModal({
   onClose: () => void;
 }) {
   const [config, setConfig] = useState<CheckoutConfig | null>(null);
+  const [access, setAccess] = useState<AccessStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`${BASE_PATH}/api/checkout`, {
-      signal: controller.signal,
-      cache: "no-store",
-    })
-      .then(async (response) => {
+
+    Promise.all([
+      fetch(`${BASE_PATH}/api/checkout`, {
+        signal: controller.signal,
+        cache: "no-store",
+      }).then(async (response) => {
         if (!response.ok) throw new Error("checkout_config");
         return (await response.json()) as CheckoutConfig;
+      }),
+      fetch(`${BASE_PATH}/api/access`, {
+        signal: controller.signal,
+        cache: "no-store",
+      }).then(async (response) => {
+        if (!response.ok) throw new Error("access_status");
+        return (await response.json()) as AccessStatus;
+      }),
+    ])
+      .then(([checkoutConfig, accessStatus]) => {
+        setConfig(checkoutConfig);
+        setAccess(accessStatus);
       })
-      .then(setConfig)
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === "AbortError") return;
-        setError("No pudimos consultar el checkout.");
+        setError("No pudimos consultar el estado de acceso.");
       })
       .finally(() => setLoading(false));
 
@@ -48,6 +67,8 @@ export default function PremiumAccessModal({
   }, []);
 
   const price = config?.prices[tier] ?? null;
+  const hasAccess = Boolean(access?.[tier]);
+
   const formattedPrice = useMemo(() => {
     if (!price) return null;
     return new Intl.NumberFormat("es-AR", {
@@ -58,7 +79,7 @@ export default function PremiumAccessModal({
   }, [price]);
 
   async function startCheckout() {
-    if (!config?.enabled || !price || starting) return;
+    if (!config?.enabled || !price || starting || hasAccess) return;
     setStarting(true);
     setError(null);
 
@@ -103,11 +124,15 @@ export default function PremiumAccessModal({
         <div className="premium-detail-grid">
           <div><span>ENTREGA</span><b>Matchday actual</b></div>
           <div><span>STAKE</span><b>{elite ? "hasta 2%" : "hasta 1.5%"}</b></div>
-          <div><span>ACCESO</span><b>Digital</b></div>
-          <div><span>PRECIO</span><b>{loading ? "Consultando…" : formattedPrice || "Por definir"}</b></div>
+          <div><span>ACCESO</span><b>{loading ? "Verificando…" : hasAccess ? "VERIFICADO" : "Digital"}</b></div>
+          <div><span>PRECIO</span><b>{loading ? "Consultando…" : hasAccess ? "YA ADQUIRIDO" : formattedPrice || "Por definir"}</b></div>
         </div>
 
-        {config?.enabled && price ? (
+        {hasAccess ? (
+          <button className="primary-button modal-button access-confirmed" disabled>
+            Acceso verificado para este Matchday
+          </button>
+        ) : config?.enabled && price ? (
           <button className="primary-button modal-button" onClick={startCheckout} disabled={starting}>
             {starting ? "Abriendo checkout…" : `Desbloquear · ${formattedPrice}`}
           </button>
