@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { currentMatchday } from "@/lib/demo-data";
 import {
   databaseConfigured,
+  getPublishedPickByTier,
   insertOrder,
   updateOrderByExternalReference,
 } from "@/lib/server/supabase-rest";
@@ -55,17 +56,32 @@ function sameOrigin(request: NextRequest) {
 }
 
 export async function GET() {
+  let availability = { pro: false, elite: false };
+
+  if (databaseConfigured()) {
+    try {
+      const [proPick, elitePick] = await Promise.all([
+        getPublishedPickByTier(currentMatchday.slug, "pro"),
+        getPublishedPickByTier(currentMatchday.slug, "elite"),
+      ]);
+      availability = {
+        pro: Boolean(proPick),
+        elite: Boolean(elitePick),
+      };
+    } catch {
+      availability = { pro: false, elite: false };
+    }
+  }
+
   return NextResponse.json(
     {
-      enabled:
-        checkoutEnabled() &&
-        Boolean(readPrice("pro")) &&
-        Boolean(readPrice("elite")),
+      enabled: checkoutEnabled(),
       provider: "mercado_pago",
       prices: {
         pro: readPrice("pro"),
         elite: readPrice("elite"),
       },
+      availability,
     },
     {
       headers: {
@@ -103,6 +119,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: "price_not_configured" },
       { status: 503 },
+    );
+  }
+
+  const publishedPick = await getPublishedPickByTier(
+    currentMatchday.slug,
+    tier,
+  ).catch(() => null);
+
+  if (!publishedPick) {
+    return NextResponse.json(
+      { error: "tier_not_available" },
+      { status: 409 },
     );
   }
 
