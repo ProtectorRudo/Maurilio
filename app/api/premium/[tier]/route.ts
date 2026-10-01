@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentMatchday } from "@/lib/demo-data";
 import {
   databaseConfigured,
+  getLatestPublishedMatchday,
   getPublishedPickByTier,
   hasActiveEntitlement,
 } from "@/lib/server/supabase-rest";
@@ -39,6 +39,11 @@ export async function GET(
     );
   }
 
+  const activeMatchday = await getLatestPublishedMatchday().catch(() => null);
+  if (!activeMatchday) {
+    return NextResponse.json({ error: "no_active_matchday" }, { status: 404 });
+  }
+
   const subjectId = request.cookies.get(ACCESS_COOKIE)?.value;
   if (!validUuid(subjectId)) {
     return NextResponse.json({ error: "access_required" }, { status: 403 });
@@ -46,7 +51,7 @@ export async function GET(
 
   const entitled = await hasActiveEntitlement(
     subjectId!,
-    currentMatchday.slug,
+    activeMatchday.slug,
     tier,
   ).catch(() => false);
 
@@ -55,7 +60,7 @@ export async function GET(
   }
 
   const pick = await getPublishedPickByTier(
-    currentMatchday.slug,
+    activeMatchday.slug,
     tier,
   ).catch(() => null);
 
@@ -77,7 +82,7 @@ export async function GET(
   return NextResponse.json(
     {
       id: pick.public_id,
-      matchday: currentMatchday.slug,
+      matchday: activeMatchday.slug,
       tier,
       sport: pick.sport,
       competition: pick.competition,
