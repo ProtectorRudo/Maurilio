@@ -34,6 +34,7 @@ type PublishPickInput = {
   thesis?: unknown;
   principalRisk?: unknown;
   oddsCapturedAt?: unknown;
+  eventStartAt?: unknown;
 };
 
 type PublishBody = {
@@ -111,6 +112,7 @@ function normalisePick(value: PublishPickInput) {
   const thesis = textValue(value.thesis);
   const principalRisk = textValue(value.principalRisk);
   const oddsCapturedAt = textValue(value.oddsCapturedAt);
+  const eventStartAt = textValue(value.eventStartAt);
 
   if (
     !publicId ||
@@ -119,14 +121,25 @@ function normalisePick(value: PublishPickInput) {
     !market ||
     !thesis ||
     !principalRisk ||
-    !oddsCapturedAt
+    !oddsCapturedAt ||
+    !eventStartAt
   ) {
     throw new Error("missing_pick_fields");
   }
 
   const captured = new Date(oddsCapturedAt);
+  const eventStart = new Date(eventStartAt);
   if (Number.isNaN(captured.getTime())) {
     throw new Error("invalid_capture_time");
+  }
+  if (Number.isNaN(eventStart.getTime())) {
+    throw new Error("invalid_event_start_time");
+  }
+  if (captured.getTime() >= eventStart.getTime()) {
+    throw new Error("capture_must_precede_event");
+  }
+  if (eventStart.getTime() <= Date.now()) {
+    throw new Error("event_already_started");
   }
 
   return {
@@ -148,6 +161,7 @@ function normalisePick(value: PublishPickInput) {
     thesis,
     principal_risk: principalRisk,
     odds_captured_at: captured.toISOString(),
+    event_start_at: eventStart.toISOString(),
   };
 }
 
