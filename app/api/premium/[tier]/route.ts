@@ -102,6 +102,7 @@ export async function GET(
       thesis: pick.thesis,
       risk: pick.principal_risk,
       capturedAt: pick.odds_captured_at,
+      eventStartAt: pick.event_start_at,
       publishedAt: pick.published_at,
     },
     {
