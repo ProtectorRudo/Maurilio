@@ -43,9 +43,23 @@ type PremiumReport = {
   thesis: string | null;
   risk: string | null;
   capturedAt: string | null;
+  eventStartAt: string | null;
 };
 
 const BASE_PATH = "/maurilio";
+
+function dateTime(value: string | null) {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  return new Intl.DateTimeFormat("es-AR", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(parsed) + " ART";
+}
 
 function percent(value: number | null, digits = 1) {
   if (value === null) return "—";
@@ -235,7 +249,8 @@ export default function PremiumAccessModal({
 
             <div className="premium-proof">
               <span>ID {report.id}</span>
-              <span>{report.capturedAt ? `CUOTA CAPTURADA · ${report.capturedAt}` : "CAPTURA PENDIENTE"}</span>
+              <span>{report.capturedAt ? `CUOTA CAPTURADA · ${dateTime(report.capturedAt)}` : "CAPTURA PENDIENTE"}</span>
+              <span>INICIO · {dateTime(report.eventStartAt)}</span>
             </div>
           </div>
         ) : (
