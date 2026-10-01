@@ -56,6 +56,14 @@ export default function Matchday({ matchday = currentMatchday, isDemo = true }: 
   const pick = matchday.picks[0];
 
   useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("open");
+    if (requested === "pro" || requested === "elite") {
+      setLockedTier(requested);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
+  useEffect(() => {
     if (phase !== "checking") return;
     setActiveAudit(0);
     const interval = window.setInterval(() => {
