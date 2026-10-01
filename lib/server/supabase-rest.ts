@@ -35,6 +35,17 @@ export function databaseConfigured() {
   return Boolean(databaseConfig());
 }
 
+export async function databaseReachable() {
+  if (!databaseConfigured()) return false;
+  try {
+    const query = new URLSearchParams({ select: "id", limit: "1" });
+    await rest("maurilio_matchdays", { query });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function rest<T>(table: string, options: RestOptions = {}): Promise<T> {
   const config = databaseConfig();
   if (!config) throw new Error("database_not_configured");
