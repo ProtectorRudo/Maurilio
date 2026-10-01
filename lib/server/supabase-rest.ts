@@ -1,0 +1,231 @@
+type Json = Record<string, unknown> | Array<unknown>;
+
+export type MaurilioOrderRow = {
+  id: string;
+  provider_order_id: string | null;
+  external_reference: string;
+  subject_id: string;
+  matchday_slug: string;
+  tier: "pro" | "elite";
+  amount_ars: number | string;
+  status: "created" | "pending" | "processed" | "paid" | "cancelled" | "refunded" | "failed";
+  live_mode: boolean | null;
+  checkout_url: string | null;
+  provider_payload: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+  paid_at: string | null;
+};
+
+type RestOptions = {
+  method?: "GET" | "POST" | "PATCH";
+  query?: URLSearchParams;
+  body?: Json;
+  prefer?: string;
+};
+
+function databaseConfig() {
+  const url = process.env.SUPABASE_URL?.replace(/\/$/, "");
+  const key = process.env.SUPABASE_SECRET_KEY;
+  if (!url || !key) return null;
+  return { url, key };
+}
+
+export function databaseConfigured() {
+  return Boolean(databaseConfig());
+}
+
+async function rest<T>(table: string, options: RestOptions = {}): Promise<T> {
+  const config = databaseConfig();
+  if (!config) throw new Error("database_not_configured");
+
+  const query = options.query?.toString();
+  const response = await fetch(
+    `${config.url}/rest/v1/${table}${query ? `?${query}` : ""}`,
+    {
+      method: options.method ?? "GET",
+      headers: {
+        apikey: config.key,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...(options.prefer ? { Prefer: options.prefer } : {}),
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
+      cache: "no-store",
+    },
+  );
+
+  const raw = await response.text();
+  if (!response.ok) {
+    console.error("Supabase REST request failed", {
+      table,
+      status: response.status,
+      body: raw.slice(0, 500),
+    });
+    throw new Error(`database_request_failed_${response.status}`);
+  }
+
+  if (!raw) return undefined as T;
+  return JSON.parse(raw) as T;
+}
+
+export async function insertOrder(input: {
+  external_reference: string;
+  subject_id: string;
+  matchday_slug: string;
+  tier: "pro" | "elite";
+  amount_ars: number;
+}) {
+  const rows = await rest<MaurilioOrderRow[]>("maurilio_orders", {
+    method: "POST",
+    prefer: "return=representation",
+    body: input,
+  });
+  if (!rows[0]) throw new Error("order_insert_failed");
+  return rows[0];
+}
+
+export async function updateOrderByExternalReference(
+  externalReference: string,
+  patch: Record<string, unknown>,
+) {
+  const query = new URLSearchParams({
+    external_reference: `eq.${externalReference}`,
+  });
+  await rest("maurilio_orders", {
+    method: "PATCH",
+    query,
+    prefer: "return=minimal",
+    body: {
+      ...patch,
+      updated_at: new Date().toISOString(),
+    },
+  });
+}
+
+export async function updateOrderById(
+  id: string,
+  patch: Record<string, unknown>,
+) {
+  const query = new URLSearchParams({ id: `eq.${id}` });
+  await rest("maurilio_orders", {
+    method: "PATCH",
+    query,
+    prefer: "return=minimal",
+    body: {
+      ...patch,
+      updated_at: new Date().toISOString(),
+    },
+  });
+}
+
+export async function findOrderByProviderOrderId(providerOrderId: string) {
+  const query = new URLSearchParams({
+    select: "*",
+    provider_order_id: `eq.${providerOrderId}`,
+    limit: "1",
+  });
+  const rows = await rest<MaurilioOrderRow[]>("maurilio_orders", { query });
+  return rows[0] ?? null;
+}
+
+export async function findOrderByExternalReference(externalReference: string) {
+  const query = new URLSearchParams({
+    select: "*",
+    external_reference: `eq.${externalReference}`,
+    limit: "1",
+  });
+  const rows = await rest<MaurilioOrderRow[]>("maurilio_orders", { query });
+  return rows[0] ?? null;
+}
+
+export async function recordWebhookEvent(input: {
+  provider_event_id: string;
+  provider_order_id: string;
+  action?: string;
+  event_type?: string;
+  request_id?: string;
+  payload: Record<string, unknown>;
+}) {
+  const query = new URLSearchParams({ on_conflict: "provider_event_id" });
+  await rest("maurilio_webhook_events", {
+    method: "POST",
+    query,
+    prefer: "resolution=ignore-duplicates,return=minimal",
+    body: input,
+  });
+}
+
+export async function updateWebhookEvent(
+  providerEventId: string,
+  patch: Record<string, unknown>,
+) {
+  const query = new URLSearchParams({
+    provider_event_id: `eq.${providerEventId}`,
+  });
+  await rest("maurilio_webhook_events", {
+    method: "PATCH",
+    query,
+    prefer: "return=minimal",
+    body: patch,
+  });
+}
+
+export async function grantEntitlement(input: {
+  subject_id: string;
+  matchday_slug: string;
+  tier: "pro" | "elite";
+  source_order_id: string;
+}) {
+  const query = new URLSearchParams({
+    on_conflict: "subject_id,matchday_slug,tier",
+  });
+  await rest("maurilio_entitlements", {
+    method: "POST",
+    query,
+    prefer: "resolution=merge-duplicates,return=minimal",
+    body: {
+      ...input,
+      status: "active",
+      granted_at: new Date().toISOString(),
+      revoked_at: null,
+    },
+  });
+}
+
+export async function revokeEntitlement(sourceOrderId: string) {
+  const query = new URLSearchParams({
+    source_order_id: `eq.${sourceOrderId}`,
+  });
+  await rest("maurilio_entitlements", {
+    method: "PATCH",
+    query,
+    prefer: "return=minimal",
+    body: {
+      status: "revoked",
+      revoked_at: new Date().toISOString(),
+    },
+  });
+}
+
+export async function hasActiveEntitlement(
+  subjectId: string,
+  matchdaySlug: string,
+  tier: "pro" | "elite",
+) {
+  const query = new URLSearchParams({
+    select: "id,expires_at",
+    subject_id: `eq.${subjectId}`,
+    matchday_slug: `eq.${matchdaySlug}`,
+    tier: `eq.${tier}`,
+    status: "eq.active",
+    limit: "1",
+  });
+  const rows = await rest<Array<{ id: string; expires_at: string | null }>>(
+    "maurilio_entitlements",
+    { query },
+  );
+  const row = rows[0];
+  if (!row) return false;
+  return !row.expires_at || new Date(row.expires_at).getTime() > Date.now();
+}
