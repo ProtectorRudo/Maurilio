@@ -7,9 +7,9 @@ import styles from "./account.module.css";
 
 type Dashboard = {
   activeSubscribers?: number;
-  balanceArs?: number | string;
-  tipsterNetArs?: number | string;
-  pendingPayoutArs?: number | string;
+  approvedCharges?: number | string;
+  grossArs?: number | string;
+  platformFeeArs?: number | string;
   activePromotionEndsAt?: string | null;
   error?: string;
 };
@@ -41,7 +41,6 @@ export default function TipsterDashboard() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [promotion, setPromotion] = useState<PromotionStatus | null>(null);
   const [busyDays, setBusyDays] = useState<number | null>(null);
-  const [payoutBusy, setPayoutBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   async function loadDashboard() {
@@ -74,41 +73,6 @@ export default function TipsterDashboard() {
     void loadDashboard().catch(() => setDashboard({ error: "unavailable" }));
   }, []);
 
-  async function requestPayout() {
-    if (!dashboard) return;
-
-    setPayoutBusy(true);
-    setMessage(null);
-
-    try {
-      const response = await fetch("/maurilio/api/tipster/payout", {
-        method: "POST",
-      });
-      const body = await response.json() as {
-        error?: string;
-        amountArs?: number | string;
-      };
-
-      if (!response.ok) {
-        setMessage(
-          body.error?.includes("payout_already_pending")
-            ? "Ya tenés un cobro pendiente."
-            : body.error?.includes("no_payout_balance")
-              ? "No hay saldo disponible para cobrar."
-              : "No pudimos solicitar el cobro.",
-        );
-        return;
-      }
-
-      setMessage(`Cobro solicitado por ${money(body.amountArs)}.`);
-      await loadDashboard();
-    } catch {
-      setMessage("No pudimos solicitar el cobro.");
-    } finally {
-      setPayoutBusy(false);
-    }
-  }
-
   async function buyPromotion(days: number) {
     setBusyDays(days);
     setMessage(null);
@@ -119,10 +83,7 @@ export default function TipsterDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ days }),
       });
-      const body = await response.json() as {
-        checkoutUrl?: string;
-        error?: string;
-      };
+      const body = await response.json() as { checkoutUrl?: string };
 
       if (!response.ok || !body.checkoutUrl || !/^https:\/\//i.test(body.checkoutUrl)) {
         setMessage("La promoción no está disponible ahora.");
@@ -137,9 +98,7 @@ export default function TipsterDashboard() {
     }
   }
 
-  if (!dashboard) {
-    return <div className={styles.empty}><b>Cargando panel…</b></div>;
-  }
+  if (!dashboard) return <div className={styles.empty}><b>Cargando panel…</b></div>;
 
   if (dashboard.error) {
     return (
@@ -149,9 +108,6 @@ export default function TipsterDashboard() {
       </div>
     );
   }
-
-  const pending = Number(dashboard.pendingPayoutArs ?? 0);
-  const balance = Number(dashboard.balanceArs ?? 0);
 
   return (
     <>
@@ -174,38 +130,19 @@ export default function TipsterDashboard() {
           <b>{dashboard.activeSubscribers ?? 0}</b>
         </div>
         <div>
-          <small>Ganado</small>
-          <b>{money(dashboard.tipsterNetArs)}</b>
+          <small>Ventas cobradas</small>
+          <b>{money(dashboard.grossArs)}</b>
         </div>
         <div>
-          <small>Disponible</small>
-          <b>{money(dashboard.balanceArs)}</b>
+          <small>Comisión Maurilio</small>
+          <b>{money(dashboard.platformFeeArs)}</b>
         </div>
       </div>
 
-      <section className={styles.simplePayoutBox}>
-        <div>
-          <h3>Cobrar saldo</h3>
-          <p>
-            {pending > 0
-              ? `Tenés un cobro pendiente por ${money(pending)}.`
-              : "Solicitá el retiro de tu saldo disponible."}
-          </p>
-        </div>
-
-        <button
-          className={styles.primary}
-          type="button"
-          disabled={payoutBusy || balance <= 0 || pending > 0}
-          onClick={() => void requestPayout()}
-        >
-          {payoutBusy
-            ? "Solicitando…"
-            : pending > 0
-              ? "Cobro pendiente"
-              : `Cobrar ${money(balance)}`}
-        </button>
-      </section>
+      <p className={styles.paymentNote}>
+        El dinero de cada venta lo recibe tu cuenta de Mercado Pago. Maurilio sólo cobra su comisión.
+        Mercado Pago puede descontar sus propios cargos al vendedor.
+      </p>
 
       {promotion?.configured ? (
         <section className={styles.simplePromo}>
@@ -236,9 +173,7 @@ export default function TipsterDashboard() {
         </section>
       ) : null}
 
-      {message ? (
-        <div className={styles.message}>{message}</div>
-      ) : null}
+      {message ? <div className={styles.message}>{message}</div> : null}
     </>
   );
 }
