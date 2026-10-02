@@ -7,9 +7,10 @@ export default function WaitingMatchday() {
           <span className="brand-mark">M</span>
           <span><b>MAURILIO</b><small>QUANT FOOTBALL</small></span>
         </a>
-        <a className="text-button" href="/maurilio/archive">
-          Registro
-        </a>
+        <nav className="nav-links" aria-label="Principal">
+          <a href="/maurilio/integrity">Integridad</a>
+          <a href="/maurilio/archive">Registro</a>
+        </nav>
       </header>
 
       <section className="no-value-hero">
