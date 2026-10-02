@@ -202,6 +202,16 @@ select
 from public.maurilio_picks
 where public_id='CI-INVARIANT-FREE';
 
+insert into maurilio_invariant_results
+select
+  'sale_stop_audited',
+  exists(
+    select 1 from public.maurilio_audit_events
+    where event_type='sale_closed'
+      and entity_id='CI-INVARIANT-FREE'
+  ),
+  'sale_closed audit event exists';
+
 do $$
 begin
   begin
@@ -231,6 +241,43 @@ select
   concat('status=',status,', pnl=',pnl_ars,', close=',closing_odds)
 from public.maurilio_picks
 where public_id='CI-INVARIANT-FREE';
+
+insert into maurilio_invariant_results
+select
+  'settlement_audited',
+  exists(
+    select 1 from public.maurilio_audit_events
+    where event_type='pick_settled'
+      and entity_id='CI-INVARIANT-FREE'
+  ),
+  'pick_settled audit event exists';
+
+do $
+declare
+  v_id uuid;
+begin
+  select id into v_id
+  from public.maurilio_audit_events
+  where entity_id='CI-INVARIANT-FREE'
+  order by created_at asc
+  limit 1;
+
+  begin
+    update public.maurilio_audit_events
+    set event_type='tampered'
+    where id=v_id;
+
+    insert into maurilio_invariant_results
+    values ('audit_append_only', false, 'unexpected update');
+  exception when others then
+    insert into maurilio_invariant_results
+    values (
+      'audit_append_only',
+      sqlerrm='audit_log_is_append_only',
+      sqlerrm
+    );
+  end;
+end $;
 
 do $$
 begin
