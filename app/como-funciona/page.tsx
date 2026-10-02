@@ -21,6 +21,11 @@ export default function ComoFuncionaPage() {
         </div>
 
         <div className={styles.notice}>
+          <strong>Cobros.</strong> Cada tipster conecta su propia cuenta de Mercado Pago.
+          El vendedor recibe su cobro y Maurilio sólo recibe la comisión de plataforma.
+        </div>
+
+        <div className={styles.notice}>
           La publicidad interna sólo modifica la posición donde aparece un tipster.
           Nunca cambia ROI, CLV, cantidad de tips ni resultados históricos.
         </div>
