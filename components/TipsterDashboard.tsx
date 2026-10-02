@@ -5,16 +5,10 @@ import Link from "next/link";
 import styles from "./account.module.css";
 
 type Dashboard = {
-  tipsterId?: string;
   activeSubscribers?: number;
-  pendingSubscribers?: number;
-  approvedCharges?: number | string;
-  grossArs?: number | string;
-  platformFeeArs?: number | string;
-  tipsterNetArs?: number | string;
-  paidOutArs?: number | string;
-  pendingPayoutArs?: number | string;
   balanceArs?: number | string;
+  tipsterNetArs?: number | string;
+  pendingPayoutArs?: number | string;
   activePromotionEndsAt?: string | null;
   error?: string;
 };
@@ -50,23 +44,29 @@ export default function TipsterDashboard() {
   const [message, setMessage] = useState<string | null>(null);
 
   async function loadDashboard() {
-      const dashboardResponse = await fetch("/maurilio/api/tipster/dashboard", { cache: "no-store" });
-      if (dashboardResponse.status === 401) {
-        window.location.assign("/maurilio/ingresar?next=%2Fpanel-tipster");
-        return;
-      }
+    const response = await fetch("/maurilio/api/tipster/dashboard", {
+      cache: "no-store",
+    });
 
-      const dash = await dashboardResponse.json() as Dashboard;
-      if (!dashboardResponse.ok) {
-        setDashboard({ error: "profile_required" });
-        return;
-      }
-      setDashboard(dash);
+    if (response.status === 401) {
+      window.location.assign("/maurilio/ingresar?next=%2Fpanel-tipster");
+      return;
+    }
 
-      if (dashboardResponse.ok) {
-        const promoResponse = await fetch("/maurilio/api/promotions", { cache: "no-store" });
-        if (promoResponse.ok) setPromotion(await promoResponse.json() as PromotionStatus);
-      }
+    const data = await response.json() as Dashboard;
+    if (!response.ok) {
+      setDashboard({ error: "profile_required" });
+      return;
+    }
+
+    setDashboard(data);
+
+    const promoResponse = await fetch("/maurilio/api/promotions", {
+      cache: "no-store",
+    });
+    if (promoResponse.ok) {
+      setPromotion(await promoResponse.json() as PromotionStatus);
+    }
   }
 
   useEffect(() => {
@@ -75,6 +75,7 @@ export default function TipsterDashboard() {
 
   async function requestPayout() {
     if (!dashboard) return;
+
     setPayoutBusy(true);
     setMessage(null);
 
@@ -90,18 +91,18 @@ export default function TipsterDashboard() {
       if (!response.ok) {
         setMessage(
           body.error?.includes("payout_already_pending")
-            ? "Ya existe una solicitud de cobro pendiente."
+            ? "Ya tenés un cobro pendiente."
             : body.error?.includes("no_payout_balance")
-              ? "No hay saldo disponible para solicitar."
-              : "No pudimos crear la solicitud de cobro.",
+              ? "No hay saldo disponible para cobrar."
+              : "No pudimos solicitar el cobro.",
         );
         return;
       }
 
-      setMessage(`Solicitud creada por ${money(body.amountArs)}. Queda pendiente de procesamiento.`);
+      setMessage(`Cobro solicitado por ${money(body.amountArs)}.`);
       await loadDashboard();
     } catch {
-      setMessage("No pudimos crear la solicitud de cobro.");
+      setMessage("No pudimos solicitar el cobro.");
     } finally {
       setPayoutBusy(false);
     }
@@ -110,101 +111,113 @@ export default function TipsterDashboard() {
   async function buyPromotion(days: number) {
     setBusyDays(days);
     setMessage(null);
+
     try {
       const response = await fetch("/maurilio/api/promotions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ days }),
       });
-      const body = await response.json() as { checkoutUrl?: string; error?: string };
-      if (!response.ok || !body.checkoutUrl) {
-        setMessage(
-          body.error === "promotions_disabled"
-            ? "La publicidad interna todavía no está habilitada para cobro."
-            : "No pudimos abrir el checkout de publicidad.",
-        );
+      const body = await response.json() as {
+        checkoutUrl?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !body.checkoutUrl || !/^https:\/\//i.test(body.checkoutUrl)) {
+        setMessage("La promoción no está disponible ahora.");
         return;
       }
-      if (!/^https:\/\//i.test(body.checkoutUrl)) {
-        setMessage("El checkout de publicidad recibido no es válido.");
-        return;
-      }
+
       window.location.assign(body.checkoutUrl);
     } catch {
-      setMessage("No pudimos abrir el checkout de publicidad.");
+      setMessage("La promoción no está disponible ahora.");
     } finally {
       setBusyDays(null);
     }
   }
 
-  if (!dashboard) return <div className={styles.empty}><b>Cargando panel…</b></div>;
+  if (!dashboard) {
+    return <div className={styles.empty}><b>Cargando panel…</b></div>;
+  }
 
   if (dashboard.error) {
     return (
       <div className={styles.empty}>
-        <b>Necesitás un perfil tipster para usar este panel.</b>
-        <Link href="/para-tipsters">Configurar perfil</Link>
+        <b>Primero creá tu perfil tipster.</b>
+        <Link href="/para-tipsters">Crear perfil</Link>
       </div>
     );
   }
 
+  const pending = Number(dashboard.pendingPayoutArs ?? 0);
+  const balance = Number(dashboard.balanceArs ?? 0);
+
   return (
     <>
-      <div className={styles.dashGrid}>
-        <div className={styles.dashMetric}><small>Suscriptores activos</small><b>{dashboard.activeSubscribers ?? 0}</b></div>
-        <div className={styles.dashMetric}><small>Bruto cobrado</small><b>{money(dashboard.grossArs)}</b></div>
-        <div className={styles.dashMetric}><small>Comisión Maurilio</small><b>{money(dashboard.platformFeeArs)}</b></div>
-        <div className={styles.dashMetric}><small>Neto tipster</small><b>{money(dashboard.tipsterNetArs)}</b></div>
-        <div className={styles.dashMetric}><small>Saldo disponible</small><b>{money(dashboard.balanceArs)}</b></div>
-        <div className={styles.dashMetric}><small>Pagado</small><b>{money(dashboard.paidOutArs)}</b></div>
-        <div className={styles.dashMetric}><small>Pago pendiente</small><b>{money(dashboard.pendingPayoutArs)}</b></div>
-        <div className={styles.dashMetric}><small>Cobros aprobados</small><b>{dashboard.approvedCharges ?? 0}</b></div>
+      <div className={styles.tipsterQuickActions}>
+        <Link href="/estudio" className={styles.tipsterPrimaryAction}>
+          <b>Publicar un tip</b>
+          <span>Elegí partido, apuesta y publicá.</span>
+        </Link>
+        <Link href="/para-tipsters">
+          <b>Editar perfil</b>
+          <span>Nombre, precio y disponibilidad.</span>
+        </Link>
       </div>
 
-      <div className={styles.actions}>
-        <Link href="/estudio">Publicar nuevo tip</Link>
-        <Link href="/para-tipsters">Editar perfil y precio</Link>
-      </div>
-
-      <section className={styles.payoutBox}>
-        <h3>Cobros</h3>
-        <p>
-          Solicitá el retiro del saldo disponible completo. Mientras exista una
-          solicitud pendiente, no se puede crear otra.
-        </p>
-        <div className={styles.statusRow}>
-          <button
-            className={styles.primary}
-            type="button"
-            disabled={
-              payoutBusy ||
-              Number(dashboard.balanceArs ?? 0) <= 0 ||
-              Number(dashboard.pendingPayoutArs ?? 0) > 0
-            }
-            onClick={() => void requestPayout()}
-          >
-            {payoutBusy
-              ? "Solicitando…"
-              : Number(dashboard.pendingPayoutArs ?? 0) > 0
-                ? `Cobro pendiente · ${money(dashboard.pendingPayoutArs)}`
-                : `Solicitar ${money(dashboard.balanceArs)}`}
-          </button>
+      <div className={styles.simpleDashGrid}>
+        <div>
+          <small>Suscriptores</small>
+          <b>{dashboard.activeSubscribers ?? 0}</b>
         </div>
+        <div>
+          <small>Ganado</small>
+          <b>{money(dashboard.tipsterNetArs)}</b>
+        </div>
+        <div>
+          <small>Disponible</small>
+          <b>{money(dashboard.balanceArs)}</b>
+        </div>
+      </div>
+
+      <section className={styles.simplePayoutBox}>
+        <div>
+          <h3>Cobrar saldo</h3>
+          <p>
+            {pending > 0
+              ? `Tenés un cobro pendiente por ${money(pending)}.`
+              : "Solicitá el retiro de tu saldo disponible."}
+          </p>
+        </div>
+
+        <button
+          className={styles.primary}
+          type="button"
+          disabled={payoutBusy || balance <= 0 || pending > 0}
+          onClick={() => void requestPayout()}
+        >
+          {payoutBusy
+            ? "Solicitando…"
+            : pending > 0
+              ? "Cobro pendiente"
+              : `Cobrar ${money(balance)}`}
+        </button>
       </section>
 
-      <section className={styles.promo}>
-        <h3>Publicidad interna</h3>
-        <p>
-          Tu perfil aparece arriba como “Patrocinado”. La publicidad modifica
-          visibilidad, nunca ROI, CLV, resultados ni orden orgánico de reputación.
-          {dashboard.activePromotionEndsAt
-            ? ` Tu promoción actual termina el ${date(dashboard.activePromotionEndsAt) ?? "día indicado"}.`
-            : ""}
-        </p>
+      {promotion?.configured ? (
+        <section className={styles.simplePromo}>
+          <div>
+            <h3>Destacar mi perfil</h3>
+            <p>
+              Aparecé arriba como Patrocinado.
+              {dashboard.activePromotionEndsAt
+                ? ` Activo hasta ${date(dashboard.activePromotionEndsAt)}.`
+                : ""}
+            </p>
+          </div>
 
-        {promotion?.configured ? (
           <div className={styles.promoOptions}>
-            {(promotion.allowedDays ?? [3, 7, 14, 30]).map((days) => (
+            {(promotion.allowedDays ?? [3, 7, 14, 30]).slice(0, 4).map((days) => (
               <button
                 key={days}
                 type="button"
@@ -217,12 +230,12 @@ export default function TipsterDashboard() {
               </button>
             ))}
           </div>
-        ) : (
-          <p>La compra de posiciones patrocinadas todavía no está habilitada.</p>
-        )}
+        </section>
+      ) : null}
 
-        {message ? <div className={`${styles.message} ${styles.error}`}>{message}</div> : null}
-      </section>
+      {message ? (
+        <div className={styles.message}>{message}</div>
+      ) : null}
     </>
   );
 }
