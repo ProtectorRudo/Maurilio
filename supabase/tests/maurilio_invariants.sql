@@ -53,6 +53,21 @@ select
   ),
   'valid published pick exists with event start';
 
+insert into maurilio_invariant_results
+select
+  'publication_audited',
+  exists(
+    select 1 from public.maurilio_audit_events
+    where event_type='pick_published'
+      and entity_id='CI-INVARIANT-FREE'
+  )
+  and exists(
+    select 1 from public.maurilio_audit_events
+    where event_type='matchday_published'
+      and entity_id='2099-12-01'
+  ),
+  'matchday and pick publication audit events exist';
+
 do $$
 declare
   v_matchday_id uuid;
@@ -232,6 +247,30 @@ begin
   end;
 end $$;
 
+do $$
+begin
+  begin
+    update public.maurilio_picks
+    set
+      sale_status='open',
+      sale_closed_reason=null,
+      sale_closed_at=null,
+      last_observed_odds=null,
+      last_observed_at=null
+    where public_id='CI-INVARIANT-FREE';
+
+    insert into maurilio_invariant_results
+    values ('risk_stop_db_immutable', false, 'unexpected reopen');
+  exception when others then
+    insert into maurilio_invariant_results
+    values (
+      'risk_stop_db_immutable',
+      sqlerrm='sale_stop_is_immutable',
+      sqlerrm
+    );
+  end;
+end $$;
+
 select public.maurilio_settle_pick('CI-INVARIANT-FREE','win',1.90);
 
 insert into maurilio_invariant_results
@@ -308,6 +347,37 @@ select
     and (payload->>'settled_count')::int = 1,
   payload::text
 from (select public.maurilio_risk_snapshot() payload) s;
+
+do $$
+declare
+  v_key text := repeat('a', 64);
+  v_payload jsonb;
+  i integer;
+begin
+  v_payload := public.maurilio_admin_login_gate(v_key, 'check');
+
+  if coalesce((v_payload->>'allowed')::boolean, false) is not true
+     or (v_payload->>'remaining')::int <> 5 then
+    insert into maurilio_invariant_results
+    values ('admin_throttle_initial', false, v_payload::text);
+  else
+    insert into maurilio_invariant_results
+    values ('admin_throttle_initial', true, v_payload::text);
+  end if;
+
+  for i in 1..5 loop
+    v_payload := public.maurilio_admin_login_gate(v_key, 'failure');
+  end loop;
+
+  insert into maurilio_invariant_results
+  values (
+    'admin_throttle_blocks',
+    coalesce((v_payload->>'allowed')::boolean, true) is false
+      and (v_payload->>'remaining')::int = 0
+      and v_payload->>'blocked_until' is not null,
+    v_payload::text
+  );
+end $$;
 
 select * from maurilio_invariant_results order by test_name;
 
