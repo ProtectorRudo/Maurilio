@@ -37,107 +37,88 @@ function date(value: string | null | undefined) {
 export default function SubscriberHub() {
   const [items, setItems] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState<string | null>(null);
-
-  async function load() {
-    setLoading(true);
-    try {
-      const response = await fetch("/maurilio/api/subscriptions", { cache: "no-store" });
-      if (response.status === 401) {
-        window.location.assign("/maurilio/ingresar?next=%2Fsuscripciones");
-        return;
-      }
-      const body = await response.json() as { subscriptions?: Subscription[] };
-      setItems(Array.isArray(body.subscriptions) ? body.subscriptions : []);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   useEffect(() => {
-    void load();
-  }, []);
+    void (async () => {
+      try {
+        const response = await fetch("/maurilio/api/subscriptions", {
+          cache: "no-store",
+        });
 
-  async function cancel(id: string) {
-    setWorking(id);
-    setMessage(null);
-    try {
-      const response = await fetch("/maurilio/api/subscriptions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "cancel", subscriptionId: id }),
-      });
-      const body = await response.json() as {
-        error?: string;
-        accessUntil?: string | null;
-      };
+        if (response.status === 401) {
+          window.location.assign("/maurilio/ingresar?next=%2Fsuscripciones");
+          return;
+        }
 
-      if (!response.ok) {
-        setMessage("No pudimos cancelar la renovación.");
-        return;
+        const body = await response.json() as { subscriptions?: Subscription[] };
+        setItems(Array.isArray(body.subscriptions) ? body.subscriptions : []);
+      } finally {
+        setLoading(false);
       }
-
-      setMessage(
-        body.accessUntil
-          ? `Renovación cancelada. El acceso continúa hasta ${date(body.accessUntil)}.`
-          : "Renovación cancelada.",
-      );
-      await load();
-    } catch {
-      setMessage("No pudimos cancelar la renovación.");
-    } finally {
-      setWorking(null);
-    }
-  }
+    })();
+  }, []);
 
   if (loading) {
     return <div className={styles.empty}><b>Cargando suscripciones…</b></div>;
   }
 
+  if (items.length === 0) {
+    return (
+      <div className={styles.empty}>
+        <b>No tenés accesos activos todavía.</b>
+        Elegí un tipster y comprá 30 días desde su perfil.
+        <div className={styles.emptyAction}>
+          <Link href="/">Explorar tipsters</Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <>
-      {message ? <div className={`${styles.message} ${styles.success}`}>{message}</div> : null}
+    <div className={styles.list}>
+      {items.map((item) => {
+        const name = item.tipster?.display_name ?? "Tipster";
+        const slug = item.tipster?.slug;
 
-      {items.length === 0 ? (
-        <div className={styles.empty}>
-          <b>No tenés suscripciones todavía.</b>
-          Elegí un tipster y suscribite desde su perfil.
-          <div className={styles.emptyAction}>
-            <Link href="/">Explorar tipsters</Link>
-          </div>
-        </div>
-      ) : (
-        <div className={styles.list}>
-          {items.map((item) => {
-            const name = item.tipster?.display_name ?? "Tipster";
-            const slug = item.tipster?.slug;
-            return (
-              <article className={styles.item} key={item.id}>
-                <div>
-                  <span className={`${styles.badge} ${item.status === "active" ? styles.active : item.status === "cancelled" ? styles.cancelled : ""}`}>
-                    {item.status === "active"
-                      ? "Activa"
-                      : item.status === "cancelled"
-                        ? "Cancelada"
-                        : item.status === "pending"
-                          ? "Pendiente"
-                          : item.status}
-                  </span>
-                  <h3>{slug ? <Link href={`/tipsters/${slug}`}>{name}</Link> : name}</h3>
-                  <p>
-                    {money(item.monthly_price_ars)} · 30 días
-                    {item.current_period_end ? ` · acceso hasta ${date(item.current_period_end)}` : ""}
-                  </p>
-                </div>
+        return (
+          <article className={styles.item} key={item.id}>
+            <div>
+              <span
+                className={`${styles.badge} ${
+                  item.status === "active"
+                    ? styles.active
+                    : item.status === "cancelled"
+                      ? styles.cancelled
+                      : ""
+                }`}
+              >
+                {item.status === "active"
+                  ? "Activo"
+                  : item.status === "cancelled"
+                    ? "Finalizado"
+                    : item.status === "pending"
+                      ? "Pago pendiente"
+                      : item.status}
+              </span>
 
-                {item.status === "active" ? (
-                  <span className={styles.manualRenewal}>Renovación manual</span>
-                ) : null}
-              </article>
-            );
-          })}
-        </div>
-      )}
-    </>
+              <h3>
+                {slug ? <Link href={`/tipsters/${slug}`}>{name}</Link> : name}
+              </h3>
+
+              <p>
+                {money(item.monthly_price_ars)} · 30 días
+                {item.current_period_end
+                  ? ` · acceso hasta ${date(item.current_period_end)}`
+                  : ""}
+              </p>
+            </div>
+
+            {item.status === "active" ? (
+              <span className={styles.manualRenewal}>Sin débito automático</span>
+            ) : null}
+          </article>
+        );
+      })}
+    </div>
   );
 }
