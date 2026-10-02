@@ -79,6 +79,19 @@ await check("public integrity proof renders without premium disclosure", async (
   assert(!body.includes("thesis"), "integrity page leaked internal thesis fields");
 });
 
+await check("buyer library renders safely without entitlement", async () => {
+  const body = await textCheck("/access");
+  assert(body.includes("Mis informes"), "buyer library heading is missing");
+  assert(!body.includes("ACCESS VERIFIED</b>"), "anonymous buyer library exposed a verified report");
+});
+
+await check("historical premium report rejects anonymous access", async () => {
+  const { response } = await request(
+    "/access/report?matchday=2099-01-01&tier=pro",
+  );
+  assert(response.status === 404, `anonymous historical report returned ${response.status}`);
+});
+
 await check("checkout config is server driven", async () => {
   const { response } = await request("/api/checkout");
   assert(response.status === 200, `checkout config returned ${response.status}`);
