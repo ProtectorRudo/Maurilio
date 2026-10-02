@@ -33,7 +33,9 @@ Implementado:
 - Checkout Mercado Pago fail-closed
 - Webhook firmado + verificación independiente de order
 - Supabase con RLS y acceso server-only
-- Control Room autenticado
+- Control Room autenticado + throttling distribuido
+- Audit Timeline append-only
+- Página pública Integrity / Proof of Process
 - Publicación atómica de Matchdays
 - Jornada NO VALUE
 - Inmutabilidad de predicciones publicadas
@@ -44,6 +46,7 @@ Implementado:
 - Ledger público real
 - Healthcheck de producción
 - Reverse proxy preparado para `viralio.net/maurilio`
+- Deploy manual guardado + smoke-test de producción
 
 En producción, los datos demo **nunca** se muestran como señal real cuando la base
 está configurada.
