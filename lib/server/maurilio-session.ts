@@ -90,6 +90,46 @@ export async function clearSessionCookies() {
   jar.set(REFRESH_COOKIE, "", cookieOptions(0));
 }
 
+export async function sendPasswordRecovery(email: string) {
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "");
+  const redirectTo = /^https:\/\//i.test(siteUrl)
+    ? `${siteUrl}/actualizar-clave`
+    : null;
+  const path = redirectTo
+    ? `/auth/v1/recover?redirect_to=${encodeURIComponent(redirectTo)}`
+    : "/auth/v1/recover";
+
+  return authFetch(path, {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function validateRecoverySession(input: {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn?: number;
+}) {
+  const response = await userApiFetch("/auth/v1/user", input.accessToken);
+  if (!response.ok) return false;
+
+  return setSessionCookies({
+    access_token: input.accessToken,
+    refresh_token: input.refreshToken,
+    expires_in: input.expiresIn,
+  });
+}
+
+export async function updatePassword(
+  accessToken: string,
+  password: string,
+) {
+  return userApiFetch("/auth/v1/user", accessToken, {
+    method: "PUT",
+    body: JSON.stringify({ password }),
+  });
+}
+
 export async function signInWithPassword(email: string, password: string) {
   const response = await authFetch("/auth/v1/token?grant_type=password", {
     method: "POST",
