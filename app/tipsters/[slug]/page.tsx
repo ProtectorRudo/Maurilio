@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import MarketplaceHeader from "@/components/MarketplaceHeader";
 import SubscribeButton from "@/components/SubscribeButton";
-import EquityCurve from "@/components/EquityCurve";
 import styles from "@/components/marketplace.module.css";
 import { getTipsterProfile } from "@/lib/server/tipster-marketplace";
 
@@ -12,11 +11,6 @@ export const dynamic = "force-dynamic";
 function pct(value: number | null) {
   if (value === null) return "—";
   return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
-}
-
-function units(value: number | null) {
-  if (value === null) return "—";
-  return `${value >= 0 ? "+" : ""}${value.toFixed(2)}u`;
 }
 
 function n(value: number | string | null) {
@@ -33,22 +27,6 @@ function money(value: number | null) {
   }).format(value);
 }
 
-function activity(value: string | null) {
-  if (!value) return "Sin liquidaciones";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "Sin fecha";
-  return new Intl.DateTimeFormat("es-AR", {
-    dateStyle: "medium",
-  }).format(parsed);
-}
-
-function sampleLabel(count: number) {
-  if (count >= 100) return "Muestra amplia";
-  if (count >= 50) return "Muestra media";
-  if (count >= 25) return "Muestra inicial";
-  return "Poca muestra";
-}
-
 export async function generateMetadata({
   params,
 }: {
@@ -59,10 +37,10 @@ export async function generateMetadata({
     const profile = await getTipsterProfile(slug);
     if (!profile) return { title: "Tipster no encontrado" };
     return {
-      title: `${profile.tipster.display_name} — historial público`,
+      title: `${profile.tipster.display_name} — Maurilio`,
       description:
         profile.tipster.headline ??
-        "Historial público registrado y liquidado dentro de Maurilio.",
+        "Perfil público con historial registrado en Maurilio.",
     };
   } catch {
     return { title: "Perfil de tipster" };
@@ -75,18 +53,7 @@ export default async function TipsterProfilePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-
-  let profile: Awaited<ReturnType<typeof getTipsterProfile>>;
-  try {
-    profile = await getTipsterProfile(slug);
-  } catch (error) {
-    console.error("Unable to load tipster profile", {
-      slug,
-      error: error instanceof Error ? error.message : "unknown",
-    });
-    throw error;
-  }
-
+  const profile = await getTipsterProfile(slug);
   if (!profile) notFound();
 
   const { tipster, history } = profile;
@@ -95,84 +62,38 @@ export default async function TipsterProfilePage({
     <main className={styles.shell}>
       <MarketplaceHeader />
 
-      <section className={styles.profileHero}>
-        <Link className={styles.back} href="/">← Volver al ranking</Link>
+      <section className={styles.simpleProfile}>
+        <Link className={styles.back} href="/">← Volver</Link>
 
-        <div className={styles.profileTop}>
+        <div className={styles.simpleProfileGrid}>
           <article className={styles.profileCard}>
-            <div className={styles.profileBadges}>
-              {tipster.is_verified ? (
-                <span className={styles.trustBadge}>✓ Cuenta verificada</span>
-              ) : null}
-              <span className={styles.availabilityBadge}>
-                {sampleLabel(tipster.picks_count_90d)}
-              </span>
-              <span
-                className={`${styles.availabilityBadge} ${
-                  tipster.accepting_subscribers
-                    ? styles.openBadge
-                    : styles.closedBadge
-                }`}
-              >
-                {tipster.accepting_subscribers
-                  ? "Suscripción abierta"
-                  : "Suscripción cerrada"}
-              </span>
-            </div>
-
-            <h1>{tipster.display_name}</h1>
-            <p>
-              {tipster.headline ??
-                "Historial público registrado dentro de Maurilio."}
-            </p>
-
-            <div className={styles.tags}>
-              {[...tipster.sports, ...tipster.specialties].map((tag) => (
-                <span className={styles.tag} key={tag}>{tag}</span>
-              ))}
-            </div>
-
-            <div className={styles.profileStatsWide}>
+            <div className={styles.simpleProfileHead}>
               <div>
-                <small>ROI · 90d</small>
+                <div className={styles.profileBadges}>
+                  {tipster.is_verified ? (
+                    <span className={styles.trustBadge}>✓ Verificado</span>
+                  ) : null}
+                  <span className={styles.availabilityBadge}>
+                    {tipster.accepting_subscribers ? "Disponible" : "No disponible"}
+                  </span>
+                </div>
+                <h1>{tipster.display_name}</h1>
+                <p>
+                  {tipster.headline ??
+                    "Historial público registrado dentro de Maurilio."}
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.simpleProfileMetrics}>
+              <div>
+                <small>ROI 90d</small>
                 <b className={(tipster.roi_pct_90d ?? 0) >= 0 ? styles.positive : styles.negative}>
                   {pct(tipster.roi_pct_90d)}
                 </b>
               </div>
               <div>
-                <small>P&L · 90d</small>
-                <b className={(tipster.profit_units_90d ?? 0) >= 0 ? styles.positive : styles.negative}>
-                  {units(tipster.profit_units_90d)}
-                </b>
-              </div>
-              <div>
-                <small>CLV · 90d</small>
-                <b className={(tipster.avg_clv_pct_90d ?? 0) >= 0 ? styles.positive : styles.negative}>
-                  {pct(tipster.avg_clv_pct_90d)}
-                </b>
-              </div>
-              <div>
-                <small>Drawdown máx.</small>
-                <b>
-                  {tipster.max_drawdown_units_90d === null
-                    ? "—"
-                    : `${tipster.max_drawdown_units_90d.toFixed(2)}u`}
-                </b>
-              </div>
-              <div>
-                <small>Win rate</small>
-                <b>{pct(tipster.win_rate_pct_90d)}</b>
-              </div>
-              <div>
-                <small>Cuota media</small>
-                <b>
-                  {tipster.avg_odds_90d === null
-                    ? "—"
-                    : tipster.avg_odds_90d.toFixed(2)}
-                </b>
-              </div>
-              <div>
-                <small>Tips · 90d</small>
+                <small>Tips</small>
                 <b>{tipster.picks_count_90d}</b>
               </div>
               <div>
@@ -181,34 +102,25 @@ export default async function TipsterProfilePage({
               </div>
             </div>
 
-            <div className={styles.profileActivity}>
-              Última liquidación: <b>{activity(tipster.last_settled_at)}</b>
+            <div className={styles.simpleTags}>
+              {[...tipster.sports, ...tipster.specialties].slice(0, 5).map((tag) => (
+                <span className={styles.tag} key={tag}>{tag}</span>
+              ))}
             </div>
           </article>
 
-          <aside className={styles.lockBox}>
-            <span className={styles.eyebrow}>Contenido futuro</span>
-            <div className={styles.lockCount}>{tipster.open_tips_count}</div>
-            <h3>
-              {tipster.open_tips_count === 1
-                ? "tip abierto bloqueado"
-                : "tips abiertos bloqueados"}
-            </h3>
+          <aside className={styles.simpleSubscribeBox}>
+            <span>Suscripción mensual</span>
+            <strong>{money(tipster.monthly_price_ars)}</strong>
             <p>
-              Los tips futuros sólo se muestran a suscriptores con acceso vigente.
-              La entrada se registra desde Bet365 cuando el tipster publica.
+              Accedé a los próximos tips mientras tu suscripción esté activa.
             </p>
 
-            <div className={styles.subscriptionFacts}>
-              <div>
-                <small>Precio mensual</small>
-                <b>{money(tipster.monthly_price_ars)}</b>
+            {tipster.open_tips_count > 0 ? (
+              <div className={styles.openTipsNotice}>
+                {tipster.open_tips_count} tip{tipster.open_tips_count === 1 ? "" : "s"} abierto{tipster.open_tips_count === 1 ? "" : "s"}
               </div>
-              <div>
-                <small>Suscriptores activos</small>
-                <b>{tipster.active_subscribers_count}</b>
-              </div>
-            </div>
+            ) : null}
 
             {tipster.accepting_subscribers && tipster.monthly_price_ars ? (
               <SubscribeButton
@@ -220,51 +132,39 @@ export default async function TipsterProfilePage({
                 Suscripciones no disponibles
               </span>
             )}
-
-            <p className={styles.lockNote}>
-              Suscribirte no garantiza resultados. El historial pasado puede
-              ayudarte a evaluar el proceso, no a eliminar el riesgo.
-            </p>
           </aside>
         </div>
       </section>
 
       <section className={styles.history}>
-        <EquityCurve history={history} />
-
         <div className={styles.sectionTop}>
           <div>
-            <span className={styles.eyebrow}>Prueba pública</span>
-            <h2>Historial liquidado</h2>
+            <span className={styles.eyebrow}>Historial</span>
+            <h2>Últimos resultados</h2>
           </div>
-          <p>Hasta 100 tips. Incluye victorias, derrotas, pushes y voids.</p>
+          <p>Cada ID abre el comprobante completo.</p>
         </div>
 
         {history.length === 0 ? (
           <div className={styles.empty}>
-            <b>Todavía no hay tips liquidados.</b>
-            Las métricas aparecerán a medida que exista historial real.
+            <b>Todavía no hay resultados.</b>
+            El historial aparecerá cuando se liquiden los primeros tips.
           </div>
         ) : (
           <div className={styles.table}>
-            <div className={`${styles.historyRow} ${styles.head}`}>
+            <div className={`${styles.simpleHistoryRow} ${styles.head}`}>
               <span>Resultado</span>
               <span>Evento</span>
-              <span>Mercado</span>
-              <span>Entrada</span>
-              <span>Cierre</span>
-              <span>CLV</span>
+              <span>Cuota</span>
               <span>P&L</span>
             </div>
 
             {history.map((row) => {
               const profit = n(row.profit_units);
-              const clv = n(row.clv_pct);
               const entry = n(row.entry_odds);
-              const close = n(row.closing_odds);
 
               return (
-                <div className={styles.historyRow} key={row.public_id}>
+                <div className={styles.simpleHistoryRow} key={row.public_id}>
                   <span
                     className={`${styles.result} ${
                       row.result === "win"
@@ -279,24 +179,14 @@ export default async function TipsterProfilePage({
                   <span>
                     <strong>{row.event}</strong>
                     <br />
+                    <small>{row.market}{row.selection ? ` · ${row.selection}` : ""}</small>
+                    <br />
                     <Link className={styles.hash} href={`/tips/${row.public_id}`}>
                       #{row.public_id}
                     </Link>
                   </span>
-                  <span>
-                    {row.market}
-                    {row.selection ? ` · ${row.selection}` : ""}
-                  </span>
                   <span>{entry?.toFixed(2) ?? "—"}</span>
-                  <span>{close?.toFixed(2) ?? "—"}</span>
-                  <span>
-                    {clv === null
-                      ? "—"
-                      : `${clv >= 0 ? "+" : ""}${clv.toFixed(1)}%`}
-                  </span>
-                  <span
-                    className={(profit ?? 0) >= 0 ? styles.positive : styles.negative}
-                  >
+                  <span className={(profit ?? 0) >= 0 ? styles.positive : styles.negative}>
                     {profit === null
                       ? "—"
                       : `${profit >= 0 ? "+" : ""}${profit.toFixed(2)}u`}
