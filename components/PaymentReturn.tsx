@@ -146,9 +146,14 @@ export default function PaymentReturn({ state }: { state: State }) {
         </div>
 
         {verification === "verified" ? (
-          <a className="primary-button" href={verifiedHref}>
-            Revelar {tier?.toUpperCase() ?? "informe"} →
-          </a>
+          <div className="return-actions">
+            <a className="primary-button" href={verifiedHref}>
+              Revelar {tier?.toUpperCase() ?? "informe"} →
+            </a>
+            <a className="text-button" href={`${BASE_PATH}/access`}>
+              Mis informes
+            </a>
+          </div>
         ) : (
           <a className="primary-button" href={BASE_PATH}>
             Volver al Matchday
