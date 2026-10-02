@@ -39,7 +39,6 @@ export default function MarketplaceHeader() {
         <Link href="/" onClick={close}>Explorar</Link>
         <Link href="/mis-tips" onClick={close}>Mis tips</Link>
         <Link href="/estudio" onClick={close}>Estudio</Link>
-        <Link href="/suscripciones" onClick={close}>Suscripciones</Link>
         <Link href="/para-tipsters" onClick={close}>Para tipsters</Link>
         <Link href="/cuenta" className={styles.login} onClick={close}>Cuenta</Link>
       </nav>
