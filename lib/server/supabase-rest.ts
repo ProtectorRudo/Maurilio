@@ -443,3 +443,40 @@ export async function closePublishedPickSale(input: {
     },
   });
 }
+
+
+export async function adminLoginGate(
+  keyHash: string,
+  action: "check" | "failure" | "success",
+) {
+  return requestJson<{
+    allowed: boolean;
+    blocked_until: string | null;
+    remaining: number;
+  }>("rpc/maurilio_admin_login_gate", {
+    method: "POST",
+    body: {
+      p_key_hash: keyHash,
+      p_action: action,
+    },
+  });
+}
+
+export type MaurilioAuditEventRow = {
+  id: string;
+  event_type: string;
+  entity_type: string;
+  entity_id: string;
+  payload: Record<string, unknown>;
+  created_at: string;
+};
+
+export async function getAuditEvents(limit = 100) {
+  const safeLimit = Math.min(Math.max(Math.trunc(limit), 1), 250);
+  const query = new URLSearchParams({
+    select: "id,event_type,entity_type,entity_id,payload,created_at",
+    order: "created_at.desc",
+    limit: String(safeLimit),
+  });
+  return rest<MaurilioAuditEventRow[]>("maurilio_audit_events", { query });
+}
