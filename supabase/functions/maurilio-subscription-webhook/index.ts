@@ -179,7 +179,7 @@ async function patchSubscription(id: string, patch: Record<string, unknown>) {
 function localStatus(providerStatus: unknown) {
   const value = String(providerStatus || "").toLowerCase();
   if (value === "authorized" || value === "active") return "active";
-  if (value === "paused") return "past_due";
+  if (value === "paused") return "paused";
   if (value === "cancelled" || value === "canceled") return "cancelled";
   if (value === "pending") return "pending";
   return "pending";
