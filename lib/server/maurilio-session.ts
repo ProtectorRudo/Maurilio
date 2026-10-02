@@ -104,7 +104,15 @@ export async function signUpWithPassword(
   password: string,
   displayName?: string,
 ) {
-  const response = await authFetch("/auth/v1/signup", {
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "");
+  const redirectTo = /^https:\/\//i.test(siteUrl)
+    ? `${siteUrl}/ingresar?confirmed=1`
+    : null;
+  const signupPath = redirectTo
+    ? `/auth/v1/signup?redirect_to=${encodeURIComponent(redirectTo)}`
+    : "/auth/v1/signup";
+
+  const response = await authFetch(signupPath, {
     method: "POST",
     body: JSON.stringify({
       email,
