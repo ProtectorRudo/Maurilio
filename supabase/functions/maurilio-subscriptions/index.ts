@@ -275,6 +275,66 @@ function feeAmount(amount: number, feeBps: number) {
   return Math.round((amount * feeBps / 10000) * 100) / 100;
 }
 
+async function verifyPreference(input: {
+  preferenceId: string;
+  accessToken: string;
+  collectorId: string;
+  marketplaceFee: number;
+  reference: string;
+}) {
+  const response = await fetch(
+    `https://api.mercadopago.com/checkout/preferences/${encodeURIComponent(input.preferenceId)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${input.accessToken}`,
+        Accept: "application/json",
+      },
+    },
+  );
+
+  const raw = await response.text();
+  let payload: Record<string, unknown> = {};
+  try {
+    payload = raw ? JSON.parse(raw) as Record<string, unknown> : {};
+  } catch {
+    payload = {};
+  }
+
+  if (!response.ok) {
+    console.error("mercadopago_preference_verify_failed", response.status, payload);
+    throw new Error("mercadopago_preference_verify_failed");
+  }
+
+  const collectorId =
+    payload.collector_id !== undefined ? String(payload.collector_id) : "";
+  const reference =
+    typeof payload.external_reference === "string"
+      ? payload.external_reference
+      : "";
+  const marketplaceFee = Number(payload.marketplace_fee);
+
+  if (collectorId !== input.collectorId) {
+    throw new Error("mercadopago_collector_mismatch");
+  }
+
+  if (reference !== input.reference) {
+    throw new Error("mercadopago_reference_mismatch");
+  }
+
+  if (
+    !Number.isFinite(marketplaceFee) ||
+    Math.round(marketplaceFee * 100) !== Math.round(input.marketplaceFee * 100)
+  ) {
+    throw new Error("mercadopago_marketplace_fee_mismatch");
+  }
+
+  return {
+    collectorId,
+    reference,
+    marketplaceFee,
+  };
+}
+
 async function createPreference(input: {
   accessToken: string;
   tipsterId: string;
@@ -685,12 +745,22 @@ Deno.serve(async (request) => {
         subscriptionId: subscription.id,
       });
 
+      const verifiedPreference = await verifyPreference({
+        preferenceId: preference.id,
+        accessToken: token,
+        collectorId: account.provider_user_id,
+        marketplaceFee,
+        reference,
+      });
+
       await patchAttempt(attemptId, {
         provider_checkout_id: preference.id,
         provider_payload: {
           id: preference.id,
           init_point: preference.initPoint,
-          collector_id: preference.collectorId,
+          collector_id: verifiedPreference.collectorId,
+          marketplace_fee: verifiedPreference.marketplaceFee,
+          external_reference: verifiedPreference.reference,
           date_created: preference.dateCreated,
         },
       });
