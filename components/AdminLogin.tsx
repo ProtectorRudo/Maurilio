@@ -23,12 +23,21 @@ export default function AdminLogin() {
       });
 
       if (!response.ok) {
-        throw new Error("login_failed");
+        const data = (await response.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        throw new Error(data.error || "login_failed");
       }
 
       window.location.reload();
-    } catch {
-      setError("Acceso rechazado.");
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message === "too_many_attempts"
+          ? "Demasiados intentos fallidos. El acceso quedó bloqueado temporalmente."
+          : err instanceof Error && err.message === "admin_security_unavailable"
+            ? "El Control Room está temporalmente cerrado por seguridad."
+            : "Acceso rechazado.",
+      );
       setLoading(false);
     }
   }
