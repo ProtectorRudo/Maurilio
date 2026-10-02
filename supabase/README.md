@@ -22,6 +22,7 @@ Current Maurilio migration versions:
 15. `20261002002232_audit_maurilio_entitlement_events.sql`
 16. `20261002002655_harden_maurilio_settlement_timing.sql`
 17. `20261002002732_add_maurilio_checkout_idempotency.sql`
+18. `20261002003532_add_maurilio_access_recovery_codes.sql`
 
 The final migration contains the canonical publication RPC and immutability
 triggers. Earlier publication migrations are retained to match applied migration
@@ -50,7 +51,11 @@ covers the critical lifecycle:
 - WIN/LOSS/PUSH settlement rejected before event start;
 - VOID allowed before event start;
 - one active checkout reservation per subject + Matchday + tier;
-- repeated checkout requests reuse the same reservation instead of creating duplicate orders.
+- repeated checkout requests reuse the same reservation instead of creating duplicate orders;
+- single-use access recovery codes stored only as SHA-256 digests;
+- recovery code expiry after 7 days;
+- consumed recovery codes deleted immediately;
+- recovery issuance and successful recovery audited append-only.
 
 Run it only against a test/disposable environment or an explicitly authorized SQL
 session.
@@ -71,6 +76,8 @@ Sensitive RPCs are also service-role only:
 - `maurilio_close_pick_sale(text,text,numeric)`
 - `maurilio_admin_login_gate(text,text)`
 - `maurilio_reserve_order(text,uuid,text,text,numeric)`
+- `maurilio_issue_recovery_code(uuid,text)`
+- `maurilio_consume_recovery_code(text)`
 
 Operational publication, sale-stop and settlement events are written to
 `maurilio_audit_events`. The audit log is append-only at the database layer.
