@@ -613,17 +613,45 @@ Deno.serve(async (request) => {
       return reply({ error: "legacy_subscription_requires_migration" }, 409);
     }
 
-    if (
-      subscription &&
-      subscription.status === "active" &&
-      subscription.current_period_end
-    ) {
-      const accessUntil = new Date(subscription.current_period_end).getTime();
+    if (subscription?.status === "active") {
+      const accessUntil = subscription.current_period_end
+        ? new Date(subscription.current_period_end).getTime()
+        : NaN;
+
       if (Number.isFinite(accessUntil) && accessUntil > Date.now()) {
         return reply({
           error: "subscription_already_active",
           accessUntil: subscription.current_period_end,
         }, 409);
+      }
+
+      await patchSubscription(subscription.id, { status: "expired" });
+      subscription = null;
+    }
+
+    if (
+      subscription &&
+      (subscription.status === "past_due" || subscription.status === "paused")
+    ) {
+      await patchSubscription(subscription.id, { status: "expired" });
+      subscription = null;
+    }
+
+    if (subscription?.status === "pending") {
+      const frozenAmount = Number(subscription.monthly_price_ars);
+      const frozenFeeBps = Number(subscription.platform_fee_bps);
+      const sameAmount =
+        Number.isFinite(frozenAmount) &&
+        Math.round(frozenAmount * 100) === Math.round(amount * 100);
+      const sameFee =
+        Number.isInteger(frozenFeeBps) && frozenFeeBps === feeBps;
+
+      if (!sameAmount || !sameFee) {
+        await patchSubscription(subscription.id, {
+          status: "cancelled",
+          cancelled_at: new Date().toISOString(),
+        });
+        subscription = null;
       }
     }
 
@@ -657,23 +685,6 @@ Deno.serve(async (request) => {
 
       subscription = inserted[0] ?? null;
       createdNew = true;
-    } else {
-      const frozenAmount = Number(subscription.monthly_price_ars);
-      const frozenFeeBps = Number(subscription.platform_fee_bps);
-
-      if (
-        !Number.isFinite(frozenAmount) ||
-        frozenAmount <= 0 ||
-        !Number.isInteger(frozenFeeBps) ||
-        frozenFeeBps <= 0
-      ) {
-        return reply({ error: "subscription_pricing_invalid" }, 409);
-      }
-
-      // Existing access keeps the price and platform fee frozen for that subscription.
-      if (Math.round(frozenAmount * 100) !== Math.round(amount * 100)) {
-        return reply({ error: "subscription_price_changed_create_new_required" }, 409);
-      }
     }
 
     if (!subscription) {
