@@ -6,24 +6,25 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://viralio.net/maurili
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Maurilio Bet — Quant Football",
+    default: "Maurilio — Tipsters verificables",
     template: "%s · Maurilio",
   },
   description:
-    "Auditoría cuantitativa de mercados deportivos. Compramos probabilidades, no certezas.",
+    "Marketplace de tipsters con historial verificable, cuotas Bet365 registradas y suscripciones.",
   applicationName: "Maurilio",
   alternates: { canonical: siteUrl },
   openGraph: {
-    title: "Maurilio Bet — Quant Football",
-    description: "El mercado pone el precio. Nosotros auditamos la probabilidad.",
+    title: "Maurilio — Tipsters verificables",
+    description:
+      "Seguí tipsters por historial registrado. El pasado es público; los tips futuros son para suscriptores.",
     type: "website",
     locale: "es_AR",
     siteName: "Maurilio",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Maurilio Bet — Quant Football",
-    description: "El mercado pone el precio. Nosotros auditamos la probabilidad.",
+    title: "Maurilio — Tipsters verificables",
+    description: "Historial real, cuotas Bet365 registradas y suscripciones.",
   },
   robots: { index: true, follow: true },
 };
