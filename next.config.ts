@@ -17,6 +17,12 @@ const contentSecurityPolicy = [
   "worker-src 'self' blob:",
 ].join("; ");
 
+const privateHeaders = [
+  { key: "Cache-Control", value: "private, no-store, max-age=0" },
+  { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+  { key: "Referrer-Policy", value: "no-referrer" },
+];
+
 const nextConfig: NextConfig = {
   basePath: "/maurilio",
   reactStrictMode: true,
@@ -35,38 +41,13 @@ const nextConfig: NextConfig = {
           { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
         ],
       },
-      {
-        source: "/control-room/:path*",
-        headers: [
-          { key: "Cache-Control", value: "private, no-store, max-age=0" },
-          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
-          { key: "Referrer-Policy", value: "no-referrer" },
-        ],
-      },
-      {
-        source: "/access/:path*",
-        headers: [
-          { key: "Cache-Control", value: "private, no-store, max-age=0" },
-          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
-          { key: "Referrer-Policy", value: "no-referrer" },
-        ],
-      },
-      {
-        source: "/api/access/:path*",
-        headers: [
-          { key: "Cache-Control", value: "private, no-store, max-age=0" },
-          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
-          { key: "Referrer-Policy", value: "no-referrer" },
-        ],
-      },
-      {
-        source: "/api/premium/:path*",
-        headers: [
-          { key: "Cache-Control", value: "private, no-store, max-age=0" },
-          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
-          { key: "Referrer-Policy", value: "no-referrer" },
-        ],
-      },
+      { source: "/api/:path*", headers: privateHeaders },
+      { source: "/ingresar", headers: privateHeaders },
+      { source: "/mis-tips/:path*", headers: privateHeaders },
+      { source: "/suscripciones/:path*", headers: privateHeaders },
+      { source: "/estudio/:path*", headers: privateHeaders },
+      { source: "/control-room/:path*", headers: privateHeaders },
+      { source: "/access/:path*", headers: privateHeaders },
     ];
   },
 };
