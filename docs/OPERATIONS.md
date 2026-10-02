@@ -202,7 +202,9 @@ The Control Room exposes the append-only operational log for:
 - Matchday publication;
 - pick publication;
 - premium sale risk stop;
-- pick settlement.
+- pick settlement;
+- entitlement grant;
+- entitlement revoke/expiry.
 
 The underlying audit rows cannot be updated or deleted. This is separate from the
 public ledger and exists to prove the operational sequence.
