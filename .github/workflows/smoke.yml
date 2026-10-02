@@ -1,0 +1,50 @@
+name: Smoke Maurilio Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Deployment origin or full /maurilio URL"
+        required: true
+        type: string
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate HTTPS target
+        shell: bash
+        env:
+          BASE_URL: ${{ inputs.base_url }}
+        run: |
+          set -euo pipefail
+          case "$BASE_URL" in
+            https://*) ;;
+            *)
+              echo "::error::Smoke target must use HTTPS"
+              exit 1
+              ;;
+          esac
+
+      - name: Run production smoke
+        run: node scripts/smoke.mjs "${{ inputs.base_url }}"
+
+      - name: Summary
+        shell: bash
+        run: |
+          {
+            echo "## Maurilio smoke"
+            echo ""
+            echo "- Target: ${{ inputs.base_url }}"
+            echo "- Result: passed"
+            echo "- Commit: ${GITHUB_SHA}"
+          } >> "$GITHUB_STEP_SUMMARY"
