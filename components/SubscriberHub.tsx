@@ -102,7 +102,10 @@ export default function SubscriberHub() {
       {items.length === 0 ? (
         <div className={styles.empty}>
           <b>No tenés suscripciones todavía.</b>
-          Explorá tipsters y elegí por historial, no por promesas.
+          Elegí un tipster y suscribite desde su perfil.
+          <div className={styles.emptyAction}>
+            <Link href="/">Explorar tipsters</Link>
+          </div>
         </div>
       ) : (
         <div className={styles.list}>
@@ -115,7 +118,13 @@ export default function SubscriberHub() {
               <article className={styles.item} key={item.id}>
                 <div>
                   <span className={`${styles.badge} ${item.status === "active" ? styles.active : item.status === "cancelled" ? styles.cancelled : ""}`}>
-                    {item.status}
+                    {item.status === "active"
+                      ? "Activa"
+                      : item.status === "cancelled"
+                        ? "Cancelada"
+                        : item.status === "pending"
+                          ? "Pendiente"
+                          : item.status}
                   </span>
                   <h3>{slug ? <Link href={`/tipsters/${slug}`}>{name}</Link> : name}</h3>
                   <p>
