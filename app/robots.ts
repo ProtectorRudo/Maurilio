@@ -13,6 +13,7 @@ export default function robots(): MetadataRoute.Robots {
           "/maurilio/suscripciones",
           "/maurilio/estudio",
           "/maurilio/panel-tipster",
+          "/maurilio/admin",
           "/maurilio/api",
         ],
       },
