@@ -42,7 +42,6 @@ SUPABASE_SECRET_KEY=<server-only-secret>
 SUPABASE_ANON_KEY=<publishable/legacy-compatible-key>
 
 MAURILIO_SITE_URL=https://viralio.net/maurilio
-MAURILIO_PLATFORM_FEE_BPS=<1..5000>
 MAURILIO_SPLIT_PAYMENTS_ENABLED=0
 MAURILIO_TOKEN_ENCRYPTION_KEY=<strong-random-server-secret>
 
@@ -56,7 +55,7 @@ MAURILIO_PROMOTION_DAILY_PRICE_ARS=
 ODDS_API_KEY=
 ```
 
-Never commit credentials.
+Never commit credentials. The Maurilio commission is configured from the authenticated Admin panel and stored in the audited platform settings table.
 
 ## Mercado Pago setup
 
@@ -86,26 +85,27 @@ Keep `MAURILIO_SPLIT_PAYMENTS_ENABLED=0` until all are true:
 
 1. registration/login/password recovery works;
 2. a user can create a tipster profile;
-3. the tipster can connect their Mercado Pago account through OAuth;
-4. a tipster without Mercado Pago cannot activate paid access;
-5. the public profile becomes purchasable only after the seller account is connected;
-6. buyer checkout is created with the seller OAuth token;
-7. Checkout Pro contains the configured `marketplace_fee`;
-8. Maurilio re-reads the preference and verifies seller collector, external reference and marketplace fee before redirecting the buyer;
-9. the payment collector is the tipster Mercado Pago account;
-10. Maurilio receives only the marketplace fee;
-11. payment webhook validates signature and seller collector;
-12. an approved payment unlocks exactly 30 days;
-13. duplicate webhooks do not extend access twice;
-14. rejected payments do not unlock access;
-15. refunded/charged-back payments revoke the related access;
-16. an already-open checkout can still be reconciled if the seller disconnects inside Maurilio after it was created;
-17. an official Mercado Pago `mp-connect / application.deauthorized` notification disables new seller sales automatically;
-18. expired access renews at the current seller price and current platform fee;
-19. the private feed blocks expired users;
-20. Bet365 publishing and automatic settlement continue to pass;
-21. admin can verify/suspend tipsters;
-22. sponsored placement remains clearly labelled.
+3. an admin has explicitly configured the Maurilio commission in Admin;
+4. the tipster can connect their Mercado Pago account through OAuth;
+5. a tipster without Mercado Pago cannot activate paid access;
+6. the public profile becomes purchasable only after the seller account is connected;
+7. buyer checkout is created with the seller OAuth token;
+8. Checkout Pro contains the configured `marketplace_fee`;
+9. Maurilio re-reads the preference and verifies seller collector, external reference and marketplace fee before redirecting the buyer;
+10. the payment collector is the tipster Mercado Pago account;
+11. Maurilio receives only the marketplace fee;
+12. payment webhook validates signature and seller collector;
+13. an approved payment unlocks exactly 30 days;
+14. duplicate webhooks do not extend access twice;
+15. rejected payments do not unlock access;
+16. refunded/charged-back payments revoke the related access;
+17. an already-open checkout can still be reconciled if the seller disconnects inside Maurilio after it was created;
+18. an official Mercado Pago `mp-connect / application.deauthorized` notification disables new seller sales automatically;
+19. expired access renews at the current seller price and current platform fee;
+20. the private feed blocks expired users;
+21. Bet365 publishing and automatic settlement continue to pass;
+22. admin can verify/suspend tipsters;
+23. sponsored placement remains clearly labelled.
 
 Only then set:
 
