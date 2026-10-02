@@ -375,8 +375,6 @@ Deno.serve(async (request) => {
         {
           method: "PATCH",
           body: JSON.stringify({
-            access_token_ciphertext: "revoked",
-            refresh_token_ciphertext: "revoked",
             revoked_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           }),
