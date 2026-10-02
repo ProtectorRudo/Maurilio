@@ -150,6 +150,7 @@ async function encryptValue(value: string, secret: string) {
 
 async function exchangeCode(input: {
   code: string;
+  state: string;
   clientId: string;
   clientSecret: string;
   redirectUri: string;
@@ -160,6 +161,7 @@ async function exchangeCode(input: {
     grant_type: "authorization_code",
     code: input.code,
     redirect_uri: input.redirectUri,
+    state: input.state,
   });
 
   const response = await fetch("https://api.mercadopago.com/oauth/token", {
@@ -317,6 +319,7 @@ Deno.serve(async (request) => {
 
       const token = await exchangeCode({
         code,
+        state,
         clientId: mp.clientId,
         clientSecret: mp.clientSecret,
         redirectUri: mp.redirectUri,
