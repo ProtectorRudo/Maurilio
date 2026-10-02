@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import styles from "./account.module.css";
 
 type Tip = {
@@ -61,6 +62,9 @@ export default function PrivateFeed() {
       <div className={styles.empty}>
         <b>No tenés tips nuevos.</b>
         Cuando un tipster al que estés suscripto publique, va a aparecer acá.
+        <div className={styles.emptyAction}>
+          <Link href="/">Explorar tipsters</Link>
+        </div>
       </div>
     );
   }
