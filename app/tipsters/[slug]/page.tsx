@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import MarketplaceHeader from "@/components/MarketplaceHeader";
 import SubscribeButton from "@/components/SubscribeButton";
+import EquityCurve from "@/components/EquityCurve";
 import styles from "@/components/marketplace.module.css";
 import { getTipsterProfile } from "@/lib/server/tipster-marketplace";
 
@@ -229,6 +230,8 @@ export default async function TipsterProfilePage({
       </section>
 
       <section className={styles.history}>
+        <EquityCurve history={history} />
+
         <div className={styles.sectionTop}>
           <div>
             <span className={styles.eyebrow}>Prueba pública</span>
