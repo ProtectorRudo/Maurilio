@@ -51,12 +51,12 @@ async function platformFeeBps() {
   return Number.isInteger(value) && value > 0 && value <= 5000 ? value : null;
 }
 
-async function paymentsConfigured() {
+function paymentsConfigured(feeBps: number | null) {
   return Boolean(
     Deno.env.get("MAURILIO_SPLIT_PAYMENTS_ENABLED") === "1" &&
     marketplaceConfig() &&
     Deno.env.get("MERCADOPAGO_WEBHOOK_SECRET") &&
-    await platformFeeBps(),
+    feeBps,
   );
 }
 
@@ -454,12 +454,13 @@ Deno.serve(async (request) => {
     const action = typeof body.action === "string" ? body.action : "";
 
     if (action === "status") {
+      const feeBps = await platformFeeBps();
       return reply({
-        configured: await paymentsConfigured(),
+        configured: paymentsConfigured(feeBps),
         provider: "mercado_pago",
         mode: "split_1_1",
         renewalMode: "manual",
-        platformFeeBps: await platformFeeBps(),
+        platformFeeBps: feeBps,
       });
     }
 
@@ -555,7 +556,8 @@ Deno.serve(async (request) => {
       return reply({ error: "invalid_action" }, 400);
     }
 
-    if (!await paymentsConfigured()) {
+    const feeBps = await platformFeeBps();
+    if (!paymentsConfigured(feeBps)) {
       return reply({ error: "subscriptions_disabled" }, 503);
     }
 
@@ -602,7 +604,6 @@ Deno.serve(async (request) => {
       return reply({ error: "tipster_payment_account_required" }, 409);
     }
 
-    const feeBps = await platformFeeBps();
     if (!feeBps) {
       return reply({ error: "platform_fee_not_configured" }, 503);
     }
