@@ -115,8 +115,20 @@ async function activeState() {
   );
 
   const freePick = picks.find((pick) => pick.tier === "free") ?? null;
-  const pro = picks.some((pick) => pick.tier === "pro");
-  const elite = picks.some((pick) => pick.tier === "elite");
+
+  const availableForSale = (pick: Record<string, unknown>) => {
+    if (pick.sale_status !== "open") return false;
+    if (typeof pick.event_start_at !== "string") return false;
+    const startsAt = new Date(pick.event_start_at).getTime();
+    return Number.isFinite(startsAt) && startsAt > Date.now();
+  };
+
+  const pro = picks.some(
+    (pick) => pick.tier === "pro" && availableForSale(pick),
+  );
+  const elite = picks.some(
+    (pick) => pick.tier === "elite" && availableForSale(pick),
+  );
 
   return {
     mode: "matchday",
