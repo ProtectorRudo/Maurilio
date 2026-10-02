@@ -80,9 +80,39 @@ await check("public integrity proof renders without premium disclosure", async (
 });
 
 await check("buyer library renders safely without entitlement", async () => {
-  const body = await textCheck("/access");
+  const { response } = await request("/access");
+  assert(response.status === 200, `buyer library returned ${response.status}`);
+  assert(
+    (response.headers.get("cache-control") || "").includes("no-store"),
+    "buyer library is cacheable",
+  );
+  assert(
+    response.headers.get("referrer-policy") === "no-referrer",
+    "buyer library can leak referrers",
+  );
+  const body = await response.text();
   assert(body.includes("Mis informes"), "buyer library heading is missing");
+  assert(body.includes("ACCESS RECOVERY"), "recovery experience is missing");
   assert(!body.includes("ACCESS VERIFIED</b>"), "anonymous buyer library exposed a verified report");
+});
+
+await check("recovery issue fails closed without browser origin", async () => {
+  const { response } = await request("/api/access/recovery/issue", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  assert(response.status === 403, `origin-less recovery issue returned ${response.status}`);
+});
+
+await check("recovery redeem fails closed without browser origin", async () => {
+  const { response } = await request("/api/access/recovery/redeem", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      code: "MB-AAAAA-AAAAA-AAAAA-AAAAA-AAAAA-AAAAA-AAAAA-AAAAA",
+    }),
+  });
+  assert(response.status === 403, `origin-less recovery redeem returned ${response.status}`);
 });
 
 await check("historical premium report rejects anonymous access", async () => {
