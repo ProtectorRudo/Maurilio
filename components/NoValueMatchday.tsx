@@ -12,6 +12,7 @@ export default function NoValueMatchday({
           <span><b>MAURILIO</b><small>QUANT FOOTBALL</small></span>
         </a>
         <nav className="nav-links" aria-label="Principal">
+          <a href="/maurilio/integrity">Integridad</a>
           <a href="/maurilio/archive">Registro</a>
         </nav>
       </header>
