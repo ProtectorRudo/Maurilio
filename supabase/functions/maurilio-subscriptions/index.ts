@@ -464,9 +464,19 @@ Deno.serve(async (request) => {
         `maurilio_tipster_subscriptions?select=*&subscriber_user_id=eq.${encodeURIComponent(user.id)}&order=created_at.desc&limit=100`,
       );
 
+      const latestByTipster = new Map<string, Record<string, unknown>>();
+      for (const row of subscriptions) {
+        const tipsterId =
+          typeof row.tipster_id === "string" ? row.tipster_id : null;
+        if (tipsterId && !latestByTipster.has(tipsterId)) {
+          latestByTipster.set(tipsterId, row);
+        }
+      }
+      const latestSubscriptions = [...latestByTipster.values()];
+
       const tipsterIds = [
         ...new Set(
-          subscriptions
+          latestSubscriptions
             .map((row) => row.tipster_id)
             .filter((value): value is string => typeof value === "string"),
         ),
@@ -486,7 +496,7 @@ Deno.serve(async (request) => {
       );
 
       return reply({
-        subscriptions: subscriptions.map((row) => ({
+        subscriptions: latestSubscriptions.map((row) => ({
           ...row,
           tipster: byId.get(String(row.tipster_id)) ?? null,
         })),
