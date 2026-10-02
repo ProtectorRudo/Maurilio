@@ -72,6 +72,13 @@ await check("public ledger renders", async () => {
   await textCheck("/archive");
 });
 
+await check("public integrity proof renders without premium disclosure", async () => {
+  const body = await textCheck("/integrity");
+  assert(body.includes("PROOF OF PROCESS"), "integrity proof heading is missing");
+  assert(!body.includes("principal_risk"), "integrity page leaked internal premium fields");
+  assert(!body.includes("thesis"), "integrity page leaked internal thesis fields");
+});
+
 await check("checkout config is server driven", async () => {
   const { response } = await request("/api/checkout");
   assert(response.status === 200, `checkout config returned ${response.status}`);
@@ -104,6 +111,20 @@ await check("checkout POST fails closed without browser origin", async () => {
     body: JSON.stringify({ tier: "pro" }),
   });
   assert(response.status === 403, `origin-less checkout returned ${response.status}`);
+});
+
+await check("admin audit API rejects anonymous access", async () => {
+  const { response } = await request("/api/admin/audit");
+  assert(response.status === 401, `anonymous admin audit returned ${response.status}`);
+});
+
+await check("admin login fails closed without browser origin", async () => {
+  const { response } = await request("/api/admin/session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password: "not-a-real-secret" }),
+  });
+  assert(response.status === 403, `origin-less admin login returned ${response.status}`);
 });
 
 await check("Control Room does not error publicly", async () => {
