@@ -176,7 +176,35 @@ Deno.serve(async (request) => {
       const subscriptions = await db<Array<Record<string, unknown>>>(
         `maurilio_tipster_subscriptions?select=*&subscriber_user_id=eq.${encodeURIComponent(user.id)}&order=created_at.desc&limit=100`,
       );
-      return reply({ subscriptions });
+
+      const tipsterIds = [
+        ...new Set(
+          subscriptions
+            .map((row) => row.tipster_id)
+            .filter((value): value is string => typeof value === "string"),
+        ),
+      ];
+
+      let tipsters: Array<Record<string, unknown>> = [];
+      if (tipsterIds.length > 0) {
+        const filter = tipsterIds.map(encodeURIComponent).join(",");
+        tipsters = await db<Array<Record<string, unknown>>>(
+          `maurilio_tipsters?select=id,slug,display_name,headline,avatar_url&or=(${tipsterIds
+            .map((id) => `id.eq.${encodeURIComponent(id)}`)
+            .join(",")})`,
+        );
+      }
+
+      const byId = new Map(
+        tipsters.map((tipster) => [String(tipster.id), tipster]),
+      );
+
+      return reply({
+        subscriptions: subscriptions.map((row) => ({
+          ...row,
+          tipster: byId.get(String(row.tipster_id)) ?? null,
+        })),
+      });
     }
 
     if (action !== "create") {
