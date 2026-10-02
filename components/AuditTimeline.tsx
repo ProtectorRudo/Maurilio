@@ -20,6 +20,8 @@ const eventLabels: Record<string, string> = {
   pick_settled: "PICK SETTLED",
   access_granted: "ACCESS GRANTED",
   access_revoked: "ACCESS REVOKED",
+  recovery_code_issued: "RECOVERY CODE ISSUED",
+  access_recovered: "ACCESS RECOVERED",
 };
 
 function formatTime(value: string) {
@@ -85,6 +87,22 @@ function eventSummary(event: AuditEvent) {
     ].filter(Boolean).join(" · ");
   }
 
+  if (event.event_type === "recovery_code_issued") {
+    return [
+      "SINGLE USE",
+      typeof p.expires_at === "string" ? `EXPIRES ${formatTime(p.expires_at)}` : null,
+    ].filter(Boolean).join(" · ");
+  }
+
+  if (event.event_type === "access_recovered") {
+    return [
+      typeof p.active_entitlements === "number"
+        ? `${p.active_entitlements} ACTIVE ENTITLEMENT(S)`
+        : null,
+      "RECOVERY CODE CONSUMED",
+    ].filter(Boolean).join(" · ");
+  }
+
   if (event.event_type === "matchday_published") {
     return [
       typeof p.label === "string" ? p.label : null,
@@ -134,8 +152,8 @@ export default function AuditTimeline() {
       </div>
 
       <p className="sale-risk-intro">
-        Publicaciones, cierres de entrada y liquidaciones quedan registradas
-        en un log append-only protegido por Postgres.
+        Publicaciones, acceso, recuperación, cierres de entrada y liquidaciones
+        quedan registrados en un log append-only protegido por Postgres.
       </p>
 
       {loading ? (
