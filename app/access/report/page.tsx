@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
+import { accessTag } from "@/lib/server/access-recovery";
 import {
   databaseConfigured,
   getEntitledPickByTier,
@@ -117,6 +118,7 @@ export default async function HistoricalReportPage({
   const edge = own !== null && implied !== null ? own - implied : null;
   const ev = own !== null && entry !== null ? own * entry - 1 : null;
   const lowerEv = low !== null && entry !== null ? low * entry - 1 : null;
+  const buyerAccessTag = accessTag(subjectId!);
 
   return (
     <main className="historical-report-page">
@@ -132,6 +134,11 @@ export default async function HistoricalReportPage({
       </header>
 
       <section className="historical-report">
+        <div className="historical-watermark" aria-hidden="true">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <span key={index}>MAURILIO · {buyerAccessTag}</span>
+          ))}
+        </div>
         <div className="historical-report-head">
           <div>
             <span className="section-kicker">{tier.toUpperCase()} / ACCESS VERIFIED</span>
@@ -141,6 +148,7 @@ export default async function HistoricalReportPage({
           <div className="immutable-badge">
             <span>IMMUTABLE</span>
             <b>{pick.public_id}</b>
+            <small>ACCESS {buyerAccessTag}</small>
           </div>
         </div>
 
@@ -182,6 +190,7 @@ export default async function HistoricalReportPage({
           <article><small>INICIO EVENTO</small><b>{dateTime(pick.event_start_at)}</b></article>
           <article><small>PUBLICADO</small><b>{dateTime(pick.published_at)}</b></article>
           <article><small>ESTADO MATCHDAY</small><b>{matchday.status.toUpperCase()}</b></article>
+          <article><small>ACCESS TAG</small><b>{buyerAccessTag}</b></article>
         </section>
 
         {pick.sale_status === "closed" && (
