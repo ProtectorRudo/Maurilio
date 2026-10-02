@@ -146,6 +146,7 @@ export default function Matchday({ matchday = currentMatchday, isDemo = true }: 
           <a href="#matchday">Matchday</a>
           <a href="#method">Método</a>
           <a href="/maurilio/integrity">Integridad</a>
+          <a href="/maurilio/access">Mis informes</a>
           <a href="/maurilio/archive">Registro</a>
         </nav>
         <a className="nav-cta" href="#matchday">Entrar al vestuario <Icon name="arrow" /></a>
