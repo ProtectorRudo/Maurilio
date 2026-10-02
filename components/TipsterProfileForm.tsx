@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import styles from "./account.module.css";
 
 type Account = {
@@ -105,7 +106,9 @@ export default function TipsterProfileForm() {
 
       setMessage({
         kind: "success",
-        text: "Perfil guardado. Ya podés entrar al Estudio y publicar tu primer tip.",
+        text: paymentConnected
+          ? "Perfil guardado."
+          : "Perfil guardado. El siguiente paso es conectar Mercado Pago.",
       });
 
       const refreshed = await fetch("/maurilio/api/account", { cache: "no-store" });
@@ -240,8 +243,9 @@ export default function TipsterProfileForm() {
           <div className={styles.paymentRequired}>
             <b>Para cobrar, conectá Mercado Pago.</b>
             <span>
-              Guardá tu perfil y hacelo desde Mi panel tipster.
+              Tus ventas se acreditarán directamente en tu cuenta.
             </span>
+            <Link href="/panel-tipster">Conectar Mercado Pago</Link>
           </div>
         )
       ) : (
