@@ -91,17 +91,20 @@ Keep `MAURILIO_SPLIT_PAYMENTS_ENABLED=0` until all are true:
 5. the public profile becomes purchasable only after the seller account is connected;
 6. buyer checkout is created with the seller OAuth token;
 7. Checkout Pro contains the configured `marketplace_fee`;
-8. the payment collector is the tipster Mercado Pago account;
-9. Maurilio receives only the marketplace fee;
-10. payment webhook validates signature and seller collector;
-11. an approved payment unlocks exactly 30 days;
-12. duplicate webhooks do not extend access twice;
-13. rejected payments do not unlock access;
-14. refunded/charged-back payments revoke the related access;
-15. the private feed blocks expired users;
-16. Bet365 publishing and automatic settlement continue to pass;
-17. admin can verify/suspend tipsters;
-18. sponsored placement remains clearly labelled.
+8. Maurilio re-reads the preference and verifies seller collector, external reference and marketplace fee before redirecting the buyer;
+9. the payment collector is the tipster Mercado Pago account;
+10. Maurilio receives only the marketplace fee;
+11. payment webhook validates signature and seller collector;
+12. an approved payment unlocks exactly 30 days;
+13. duplicate webhooks do not extend access twice;
+14. rejected payments do not unlock access;
+15. refunded/charged-back payments revoke the related access;
+16. an already-open checkout can still be reconciled if the seller disconnects after it was created;
+17. expired access renews at the current seller price and current platform fee;
+18. the private feed blocks expired users;
+19. Bet365 publishing and automatic settlement continue to pass;
+20. admin can verify/suspend tipsters;
+21. sponsored placement remains clearly labelled.
 
 Only then set:
 
