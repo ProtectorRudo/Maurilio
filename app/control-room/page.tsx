@@ -6,6 +6,7 @@ import ControlRoom from "@/components/ControlRoom";
 import SettlementPanel from "@/components/SettlementPanel";
 import SaleRiskPanel from "@/components/SaleRiskPanel";
 import AuditTimeline from "@/components/AuditTimeline";
+import LaunchReadiness from "@/components/LaunchReadiness";
 import {
   ADMIN_COOKIE,
   adminConfigured,
@@ -58,6 +59,7 @@ export default async function ControlRoomPage() {
           cuando el informe supera los controles cuantitativos.
         </p>
       </section>
+      <LaunchReadiness />
       <ControlRoom />
       <SaleRiskPanel />
       <SettlementPanel />
