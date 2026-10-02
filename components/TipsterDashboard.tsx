@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import PaymentAccountCard from "@/components/PaymentAccountCard";
 import styles from "./account.module.css";
 
 type Dashboard = {
@@ -164,6 +165,8 @@ export default function TipsterDashboard() {
           <span>Nombre, precio y disponibilidad.</span>
         </Link>
       </div>
+
+      <PaymentAccountCard />
 
       <div className={styles.simpleDashGrid}>
         <div>
