@@ -17,10 +17,18 @@ function safeNext(value: string | undefined) {
 export default async function IngresarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{
+    next?: string;
+    confirmed?: string;
+    reset?: string;
+  }>;
 }) {
   const params = await searchParams;
-  const nextPath = safeNext(typeof params.next === "string" ? params.next : undefined);
+  const nextPath = safeNext(
+    typeof params.next === "string" ? params.next : undefined,
+  );
+  const newAccount = params.confirmed === "1";
+  const resetDone = params.reset === "1";
 
   return (
     <main className={market.shell}>
@@ -29,10 +37,14 @@ export default async function IngresarPage({
         <span className={market.eyebrow}>Tu cuenta</span>
         <h1>Entrá a Maurilio.</h1>
         <p>
-          Una cuenta sirve para suscribirte a tipsters, acceder a tips futuros y,
-          si querés publicar, convertir tu perfil en cuenta de tipster.
+          Una sola cuenta alcanza para seguir tipsters o construir un historial
+          como tipster. El camino se elige después de ingresar.
         </p>
-        <AuthPanel nextPath={nextPath} />
+        <AuthPanel
+          nextPath={nextPath}
+          newAccount={newAccount}
+          resetDone={resetDone}
+        />
       </section>
     </main>
   );
