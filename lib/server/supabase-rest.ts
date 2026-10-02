@@ -43,6 +43,10 @@ export type MaurilioPickRow = {
   last_observed_odds: number | string | null;
   last_observed_at: string | null;
   status: "draft" | "published" | "void" | "settled";
+  result?: "win" | "loss" | "push" | "void" | null;
+  closing_odds?: number | string | null;
+  pnl_ars?: number | string | null;
+  settled_at?: string | null;
   published_at: string | null;
 };
 
@@ -479,4 +483,70 @@ export async function getAuditEvents(limit = 100) {
     limit: String(safeLimit),
   });
   return rest<MaurilioAuditEventRow[]>("maurilio_audit_events", { query });
+}
+
+
+export type MaurilioEntitlementRow = {
+  id: string;
+  subject_id: string;
+  matchday_slug: string;
+  tier: "pro" | "elite";
+  status: "active" | "revoked" | "expired";
+  granted_at: string;
+  expires_at: string | null;
+};
+
+export async function getActiveEntitlements(
+  subjectId: string,
+  limit = 50,
+) {
+  const safeLimit = Math.min(Math.max(Math.trunc(limit), 1), 100);
+  const query = new URLSearchParams({
+    select: "id,subject_id,matchday_slug,tier,status,granted_at,expires_at",
+    subject_id: `eq.${subjectId}`,
+    status: "eq.active",
+    order: "granted_at.desc",
+    limit: String(safeLimit),
+  });
+  const rows = await rest<MaurilioEntitlementRow[]>(
+    "maurilio_entitlements",
+    { query },
+  );
+  const now = Date.now();
+  return rows.filter(
+    (row) =>
+      !row.expires_at || new Date(row.expires_at).getTime() > now,
+  );
+}
+
+export async function getMatchdayBySlug(slug: string) {
+  const query = new URLSearchParams({
+    select: "id,slug,match_date,label,status,no_value,published_at",
+    slug: `eq.${slug}`,
+    limit: "1",
+  });
+  const rows = await rest<MaurilioMatchdayRow[]>("maurilio_matchdays", {
+    query,
+  });
+  return rows[0] ?? null;
+}
+
+export async function getEntitledPickByTier(
+  matchdaySlug: string,
+  tier: "pro" | "elite",
+) {
+  const matchday = await getMatchdayBySlug(matchdaySlug);
+  if (!matchday) return null;
+
+  const query = new URLSearchParams({
+    select:
+      "id,matchday_id,public_id,tier,sport,competition,event,market,selection,bookmaker,entry_odds,minimum_odds,probability_own,probability_low,probability_high,stake_pct,stake_ars,thesis,principal_risk,odds_captured_at,event_start_at,sale_status,sale_closed_reason,sale_closed_at,last_observed_odds,last_observed_at,status,result,closing_odds,pnl_ars,settled_at,published_at",
+    matchday_id: `eq.${matchday.id}`,
+    tier: `eq.${tier}`,
+    status: "in.(published,settled)",
+    order: "published_at.desc",
+    limit: "1",
+  });
+  const rows = await rest<MaurilioPickRow[]>("maurilio_picks", { query });
+  return rows[0] ?? null;
 }
