@@ -355,6 +355,67 @@ declare
   v_entitlement_id uuid;
 begin
   insert into public.maurilio_orders(
+    external_reference, subject_id, matchday_slug, tier, amount_ars, status, paid_at
+  )
+  values (
+    'ci-entitlement-order', v_subject, '2099-12-01', 'pro', 1000, 'paid', now()
+  )
+  returning id into v_order_id;
+
+  insert into public.maurilio_entitlements(
+    subject_id, matchday_slug, tier, source_order_id, status
+  )
+  values (
+    v_subject, '2099-12-01', 'pro', v_order_id, 'active'
+  )
+  returning id into v_entitlement_id;
+
+  insert into maurilio_invariant_results
+  select 'access_grant_audited',
+    exists(
+      select 1 from public.maurilio_audit_events
+      where event_type='access_granted'
+        and entity_id=v_entitlement_id::text
+    ),
+    'access_granted audit event exists';
+
+  insert into maurilio_invariant_results
+  select 'historical_entitlement_survives_settlement',
+    exists(
+      select 1 from public.maurilio_entitlements
+      where id=v_entitlement_id and status='active'
+    ),
+    'active entitlement remains after Matchday settlement';
+
+  update public.maurilio_entitlements
+  set status='revoked', revoked_at=now()
+  where id=v_entitlement_id;
+
+  insert into maurilio_invariant_results
+  select 'access_revoke_audited',
+    exists(
+      select 1 from public.maurilio_audit_events
+      where event_type='access_revoked'
+        and entity_id=v_entitlement_id::text
+    ),
+    'access_revoked audit event exists';
+
+  insert into maurilio_invariant_results
+  select 'revoked_entitlement_inactive',
+    exists(
+      select 1 from public.maurilio_entitlements
+      where id=v_entitlement_id and status='revoked'
+    ),
+    'revoked entitlement is no longer active';
+end $$;
+
+do $$
+declare
+  v_subject uuid := '00000000-0000-4000-8000-000000000123'::uuid;
+  v_order_id uuid;
+  v_entitlement_id uuid;
+begin
+  insert into public.maurilio_orders(
     external_reference,
     subject_id,
     matchday_slug,
