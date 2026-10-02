@@ -285,3 +285,5 @@ linear-gradient(180deg,#07100c,#050807 42%);padding-bottom:90px}
 .historical-report>.ledger-rule{margin-top:20px}
 @media(max-width:800px){.historical-metrics,.historical-proof-grid,.historical-settlement{grid-template-columns:1fr 1fr}.historical-thesis-grid{grid-template-columns:1fr}.access-report-card{grid-template-columns:1fr}.access-report-card .primary-button{grid-column:1;grid-row:auto}.historical-report-head{flex-direction:column}}
 @media(max-width:520px){.historical-metrics,.historical-proof-grid,.historical-settlement{grid-template-columns:1fr}}
+
+.return-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
