@@ -287,3 +287,18 @@ linear-gradient(180deg,#07100c,#050807 42%);padding-bottom:90px}
 @media(max-width:520px){.historical-metrics,.historical-proof-grid,.historical-settlement{grid-template-columns:1fr}}
 
 .return-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+
+/* --- Production launch readiness --- */
+.readiness-panel{display:grid;gap:14px;margin-bottom:26px;border:1px solid rgba(105,243,154,.14);background:linear-gradient(180deg,rgba(105,243,154,.025),rgba(7,11,8,.88));border-radius:14px;padding:18px}
+.readiness-state{font:8px monospace;letter-spacing:.1em;border-radius:999px;padding:7px 10px;border:1px solid var(--line)}
+.readiness-state.ready{color:#9df8bd;border-color:rgba(105,243,154,.22);background:rgba(105,243,154,.045)}
+.readiness-state.waiting{color:#d8ad66;border-color:rgba(230,187,105,.2);background:rgba(230,187,105,.035)}
+.readiness-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.readiness-check{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--line);background:#070b08;border-radius:9px;padding:11px;min-height:72px}
+.readiness-check>span{display:grid;place-items:center;width:18px;height:18px;border-radius:50%;font:10px monospace;flex:0 0 auto}
+.readiness-check>div{display:grid;gap:5px}.readiness-check b{font:8px monospace;letter-spacing:.06em;color:#d1d9d3}.readiness-check small{font-size:8px;line-height:1.45;color:#69756d}
+.readiness-check.is-ok>span{color:#8ff1ae;background:rgba(105,243,154,.08)}.readiness-check.is-off>span{color:#db7777;background:rgba(219,119,119,.07)}.readiness-check.is-neutral>span{color:#d7ac65;background:rgba(230,187,105,.06)}
+.readiness-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;border-top:1px solid var(--line);padding-top:12px}
+.readiness-summary div{display:grid;gap:5px}.readiness-summary small{color:#58645d;font:7px monospace;letter-spacing:.08em}.readiness-summary b{font:10px monospace;color:#cfd7d1}
+@media(max-width:1000px){.readiness-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:650px){.readiness-grid,.readiness-summary{grid-template-columns:1fr}}
