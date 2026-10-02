@@ -266,6 +266,10 @@ async function statusView() {
       elite: price("elite"),
     },
     availability,
+    saleEndsAt: {
+      pro: pro?.event_start_at ?? null,
+      elite: elite?.event_start_at ?? null,
+    },
   };
 }
 
