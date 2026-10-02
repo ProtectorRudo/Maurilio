@@ -262,3 +262,10 @@ shared screenshots can be attributed to an access subject without collecting a
 name, email address, phone number or other personal identifier. The tag is a
 deterrence/audit mechanism, not a claim that screenshots can be technically
 prevented.
+
+
+## Mercado Pago
+
+The production payment activation checklist is maintained in
+`docs/PAYMENTS.md`. Checkout remains fail-closed until the Edge Function
+secrets, prices, signed webhook and final checkout switch are configured.
