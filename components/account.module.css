@@ -41,3 +41,5 @@
 
 .paymentConnect{margin:14px 0;border:1px solid rgba(105,243,154,.16);border-radius:16px;padding:16px;background:linear-gradient(180deg,rgba(105,243,154,.035),#080d0a);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}.paymentConnect h3{margin:4px 0 5px;font-size:17px}.paymentConnect p{margin:0;max-width:560px;color:#78867e;font-size:10px;line-height:1.55}.paymentEyebrow{color:#69f39a;font-size:8px;text-transform:uppercase;letter-spacing:.1em}.paymentConnectActions{display:flex;align-items:center;gap:10px}.paymentConnectActions button{border:0;background:transparent;color:#75827a;font-size:10px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}.connectedBadge{border:1px solid rgba(105,243,154,.22);border-radius:99px;padding:8px 10px;color:#aef5c6;font-size:9px;font-weight:800}
 @media(max-width:700px){.paymentConnect{align-items:flex-start;flex-direction:column}.paymentConnect>.primary{width:100%}}
+
+.paymentNote{margin:8px 0 16px;color:#748178;font-size:10px;line-height:1.55}.manualRenewal{color:#7f8c84;font-size:10px}
