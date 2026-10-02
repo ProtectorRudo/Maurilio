@@ -16,6 +16,7 @@ export default function robots(): MetadataRoute.Robots {
           "/maurilio/suscripciones",
           "/maurilio/estudio",
           "/maurilio/panel-tipster",
+          "/maurilio/conectar-mercadopago",
           "/maurilio/admin",
           "/maurilio/tips/",
           "/maurilio/api",
