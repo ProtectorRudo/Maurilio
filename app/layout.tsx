@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import MarketplaceFooter from "@/components/MarketplaceFooter";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://viralio.net/maurilio";
 
@@ -39,7 +40,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body>{children}<MarketplaceFooter /></body>
     </html>
   );
 }
