@@ -10,6 +10,7 @@ type OpenPick = {
   selection: string | null;
   entry_odds: number | string | null;
   stake_ars: number | string | null;
+  event_start_at: string | null;
 };
 
 const BASE_PATH = "/maurilio";
@@ -45,6 +46,7 @@ export default function SettlementPanel() {
 
   async function settle(publicId: string) {
     if (busyId) return;
+    const pick = picks.find((item) => item.public_id === publicId);
     const result = resultById[publicId] || "";
     const closing = closingById[publicId] || "";
 
@@ -52,9 +54,18 @@ export default function SettlementPanel() {
       setError("Elegí un resultado antes de liquidar.");
       return;
     }
-    if (result !== "void" && !closing) {
-      setError("La cuota de cierre Bet365 es obligatoria.");
-      return;
+    if (result !== "void") {
+      const starts = pick?.event_start_at
+        ? new Date(pick.event_start_at).getTime()
+        : Number.NaN;
+      if (!Number.isFinite(starts) || starts > Date.now()) {
+        setError("WIN / LOSS / PUSH sólo pueden liquidarse después del inicio del evento. VOID sí puede cerrarse antes.");
+        return;
+      }
+      if (!closing) {
+        setError("La cuota de cierre Bet365 es obligatoria.");
+        return;
+      }
     }
 
     setBusyId(publicId);
@@ -143,6 +154,11 @@ export default function SettlementPanel() {
                 <span>
                   Stake {pick.stake_ars ? `$ ${Number(pick.stake_ars).toLocaleString("es-AR")}` : "—"}
                 </span>
+                <span>
+                  Inicio {pick.event_start_at
+                    ? new Date(pick.event_start_at).toLocaleString("es-AR")
+                    : "—"}
+                </span>
               </div>
               <label>
                 Resultado
@@ -194,7 +210,8 @@ export default function SettlementPanel() {
 
       <p className="control-footnote">
         P&L se calcula en servidor: WIN = stake × (cuota − 1), LOSS = −stake,
-        PUSH/VOID = 0. El CLV público usa entrada Bet365 vs cierre Bet365.
+        PUSH/VOID = 0. WIN/LOSS/PUSH sólo se aceptan después del inicio; VOID puede
+        cerrarse antes. El CLV público usa entrada Bet365 vs cierre Bet365.
       </p>
     </section>
   );
