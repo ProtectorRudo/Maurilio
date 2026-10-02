@@ -126,6 +126,11 @@ A premium tier is purchasable only if:
 At event start, premium sales close automatically. Existing verified entitlements
 remain valid for audit/review of the purchased report.
 
+Before event start, the operator can also trigger an irreversible sale risk stop
+when Bet365 falls below the published minimum odds, the market disappears, or new
+material information invalidates the entry conditions. A price-based stop requires
+a freshly observed Bet365 quote below the immutable minimum price.
+
 Payment flow:
 
 1. order is persisted locally;
