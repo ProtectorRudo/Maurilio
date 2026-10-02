@@ -1,5 +1,6 @@
 import MarketplaceHeader from "@/components/MarketplaceHeader";
 import AdminTipsterConsole from "@/components/AdminTipsterConsole";
+import AdminPaymentReadiness from "@/components/AdminPaymentReadiness";
 import market from "@/components/marketplace.module.css";
 import styles from "@/components/account.module.css";
 
@@ -20,6 +21,7 @@ export default function AdminPage() {
           </div>
           <p>Verificación y suspensión de perfiles.</p>
         </div>
+        <AdminPaymentReadiness />
         <AdminTipsterConsole />
       </section>
     </main>
