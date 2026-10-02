@@ -43,15 +43,19 @@ SUPABASE_SECRET_KEY=<server-only-secret>
 SUPABASE_ANON_KEY=<publishable/legacy-compatible-key>
 
 MAURILIO_PLATFORM_FEE_BPS=<configured-platform-fee>
-MAURILIO_SUBSCRIPTIONS_ENABLED=0
+MAURILIO_SPLIT_PAYMENTS_ENABLED=0
+MAURILIO_TOKEN_ENCRYPTION_KEY=<strong-random-server-secret>
 MAURILIO_PROMOTIONS_ENABLED=0
 
-MERCADOPAGO_ACCESS_TOKEN=
+MERCADOPAGO_CLIENT_ID=
+MERCADOPAGO_CLIENT_SECRET=
 MERCADOPAGO_WEBHOOK_SECRET=
 ODDS_API_KEY=
 ```
 
-Preview can run with payments disabled.
+Preview can run with Split payments disabled.
+
+The Mercado Pago OAuth / Split secrets are consumed by Supabase Edge Functions. Configure the same production values in Supabase Edge Function secrets before enabling real payments.
 
 ## Workflow sequence
 
@@ -89,7 +93,7 @@ If the origin is missing or invalid, Viralio should fail closed and keep the res
 
 ## Current blocker
 
-The deploy workflow was tested and correctly stopped at its credential gate because these repository secrets are not configured yet:
+The deploy workflow is still fail-closed. It cannot create a browser preview until these repository secrets are configured:
 
 - `VERCEL_TOKEN`
 - `VERCEL_ORG_ID`
