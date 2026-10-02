@@ -13,6 +13,25 @@ export function adminConfigured() {
   return Boolean(secret());
 }
 
+export function adminThrottleKey(input: {
+  forwardedFor?: string | null;
+  realIp?: string | null;
+  userAgent?: string | null;
+}) {
+  const key = secret();
+  if (!key) throw new Error("admin_not_configured");
+
+  const forwarded = input.forwardedFor?.split(",")[0]?.trim();
+  const identity =
+    forwarded ||
+    input.realIp?.trim() ||
+    `unknown:${input.userAgent?.slice(0, 120) || "no-agent"}`;
+
+  return createHmac("sha256", key)
+    .update(`maurilio-admin-login:${identity}`)
+    .digest("hex");
+}
+
 function sign(value: string) {
   const key = secret();
   if (!key) throw new Error("admin_not_configured");
