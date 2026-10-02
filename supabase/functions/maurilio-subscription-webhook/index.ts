@@ -218,13 +218,23 @@ async function processPreapproval(providerId: string) {
   const local = await subscriptionByProvider(providerId);
   if (!local) return false;
 
+  const status = localStatus(provider.status);
+  const periodEnd =
+    typeof provider.next_payment_date === "string"
+      ? provider.next_payment_date
+      : null;
+
+  if (status === "active") {
+    const parsed = periodEnd ? new Date(periodEnd).getTime() : NaN;
+    if (!Number.isFinite(parsed) || parsed <= Date.now()) {
+      throw new Error("subscription_period_end_missing");
+    }
+  }
+
   await patchSubscription(local.id, {
-    status: localStatus(provider.status),
+    status,
     provider_payload: provider,
-    current_period_end:
-      typeof provider.next_payment_date === "string"
-        ? provider.next_payment_date
-        : null,
+    current_period_end: periodEnd,
   });
 
   return true;
@@ -285,14 +295,31 @@ async function processAuthorizedPayment(invoiceId: string) {
   );
 
   if (status === "approved") {
+    const preapproval = await mp(
+      `/preapproval/${encodeURIComponent(providerSubscriptionId)}`,
+    );
+    const periodEnd =
+      typeof preapproval.next_payment_date === "string"
+        ? preapproval.next_payment_date
+        : null;
+    const parsedPeriodEnd = periodEnd ? new Date(periodEnd).getTime() : NaN;
+
+    if (!Number.isFinite(parsedPeriodEnd) || parsedPeriodEnd <= Date.now()) {
+      throw new Error("subscription_period_end_missing");
+    }
+
     await patchSubscription(local.id, {
       status: "active",
       last_payment_at: paidAt,
+      current_period_end: periodEnd,
     });
   } else if (status === "rejected") {
     await patchSubscription(local.id, { status: "past_due" });
   } else if (status === "cancelled" || status === "refunded") {
-    await patchSubscription(local.id, { status: "cancelled" });
+    await patchSubscription(local.id, {
+      status: "cancelled",
+      current_period_end: new Date().toISOString(),
+    });
   }
 
   return true;
