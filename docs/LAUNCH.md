@@ -1,6 +1,6 @@
 # Maurilio — Production Launch Contract
 
-Maurilio is a marketplace of **tipsters + subscribers** under:
+Maurilio is a marketplace of **tipsters + paid access** under:
 
 ```
 https://viralio.net/maurilio
@@ -19,32 +19,35 @@ Viralio must proxy `/maurilio` and `/maurilio/:path*` to the verified Maurilio o
 Launch only if these rules remain true:
 
 - settled tipster history is public;
-- future tips are visible only to subscribers with active access;
+- future tips are visible only to users with paid access;
 - entry odds are captured from Bet365, never typed manually by the tipster;
 - published tips are immutable;
 - closing odds / CLV are stored when available;
 - advertising changes visibility only, never performance metrics;
-- subscription commission is frozen per subscription/payment;
-- cancelled renewal does not remove access already paid for;
-- suspended tipsters cannot accept new subscriptions;
-- financial payouts are ledgered separately from subscription receipts.
+- a tipster must connect their own Mercado Pago seller account before accepting paid access;
+- buyer payments are processed through Mercado Pago Split Payments 1:1;
+- Maurilio does not custody tipster sale proceeds;
+- Maurilio receives only its marketplace commission;
+- each approved payment unlocks 30 days of access;
+- renewal is manual until recurring marketplace split is officially supported/documented;
+- suspended tipsters cannot accept new paid access.
 
 ## Required app variables
-
-Server/runtime values:
 
 ```env
 NEXT_PUBLIC_SITE_URL=https://viralio.net/maurilio
 
 SUPABASE_URL=https://<project>.supabase.co
 SUPABASE_SECRET_KEY=<server-only-secret>
-SUPABASE_ANON_KEY=<legacy-anon-or-publishable-compatible-key>
+SUPABASE_ANON_KEY=<publishable/legacy-compatible-key>
 
-MAURILIO_PLATFORM_FEE_BPS=<1..5000>
-MAURILIO_SUBSCRIPTIONS_ENABLED=0
 MAURILIO_SITE_URL=https://viralio.net/maurilio
+MAURILIO_PLATFORM_FEE_BPS=<1..5000>
+MAURILIO_SPLIT_PAYMENTS_ENABLED=0
+MAURILIO_TOKEN_ENCRYPTION_KEY=<strong-random-server-secret>
 
-MERCADOPAGO_ACCESS_TOKEN=
+MERCADOPAGO_CLIENT_ID=
+MERCADOPAGO_CLIENT_SECRET=
 MERCADOPAGO_WEBHOOK_SECRET=
 
 MAURILIO_PROMOTIONS_ENABLED=0
@@ -55,6 +58,19 @@ ODDS_API_KEY=
 
 Never commit credentials.
 
+## Mercado Pago setup
+
+Create a Mercado Pago application using the **Marketplace** model and configure:
+
+- OAuth redirect URL:
+  `https://viralio.net/maurilio/conectar-mercadopago`
+- payment Webhook:
+  `https://<supabase-project>.supabase.co/functions/v1/maurilio-subscription-webhook`
+- payment topic enabled for production;
+- production seller accounts with the identification level required by Mercado Pago.
+
+Each tipster authorizes Maurilio through OAuth. Seller access/refresh tokens are encrypted server-side before storage.
+
 ## Release gate
 
 Every release must pass:
@@ -64,39 +80,34 @@ npm run typecheck
 npm run build
 ```
 
-GitHub Actions enforces both on `main`.
-
-## First admin
-
-Create a normal Maurilio account first, then promote that exact account manually in Supabase.
-See `docs/ADMIN_BOOTSTRAP.md`.
-
-Do not derive admin authorization from user metadata.
-
 ## Smoke test before enabling money
 
-Keep subscriptions/promotions disabled until all are true:
+Keep `MAURILIO_SPLIT_PAYMENTS_ENABLED=0` until all are true:
 
-1. registration works;
-2. email confirmation returns to Maurilio;
-3. login/logout works;
-4. password recovery works;
-5. a normal user can become a tipster;
-6. the public profile appears only after a real owned profile exists;
-7. the tipster studio loads Bet365 events and supported markets;
-8. publishing revalidates Bet365 server-side and seals the tip;
-9. subscriber checkout opens with the tipster's frozen monthly price and platform fee;
-10. subscription webhook activates access;
-11. future tip appears in `Mis tips`;
-12. cancellation stops renewal but preserves current-period access;
-13. automatic settlement resolves a test tip;
-14. public history updates without exposing future selections;
-15. tipster revenue dashboard reflects gross / commission / net;
-16. payout request enters the admin queue and can be marked paid with a reference;
-17. admin can verify, suspend and reactivate tipsters;
-18. sponsored placement is visibly labelled and does not alter organic metrics.
+1. registration/login/password recovery works;
+2. a user can create a tipster profile;
+3. the tipster can connect their Mercado Pago account through OAuth;
+4. a tipster without Mercado Pago cannot activate paid access;
+5. the public profile becomes purchasable only after the seller account is connected;
+6. buyer checkout is created with the seller OAuth token;
+7. Checkout Pro contains the configured `marketplace_fee`;
+8. the payment collector is the tipster Mercado Pago account;
+9. Maurilio receives only the marketplace fee;
+10. payment webhook validates signature and seller collector;
+11. an approved payment unlocks exactly 30 days;
+12. duplicate webhooks do not extend access twice;
+13. rejected payments do not unlock access;
+14. refunded/charged-back payments revoke the related access;
+15. the private feed blocks expired users;
+16. Bet365 publishing and automatic settlement continue to pass;
+17. admin can verify/suspend tipsters;
+18. sponsored placement remains clearly labelled.
 
-Only then enable subscriptions/promotions.
+Only then set:
+
+```
+MAURILIO_SPLIT_PAYMENTS_ENABLED=1
+```
 
 ## Health check
 
@@ -104,13 +115,9 @@ Only then enable subscriptions/promotions.
 GET /maurilio/api/health
 ```
 
-The endpoint is intentionally fail-closed and returns a degraded status when core database/auth configuration is unavailable.
+## Preview blocker
 
-## Current live blocker
-
-Code, database migrations and CI are ready for preview deployment.
-
-The preview workflow currently requires these GitHub secrets:
+The Vercel preview workflow still requires:
 
 ```
 VERCEL_TOKEN
@@ -118,17 +125,17 @@ VERCEL_ORG_ID
 VERCEL_PROJECT_ID
 ```
 
-Without them no Vercel preview can be created from GitHub Actions.
+Without them no browser preview is created.
 
 ## Production cutover
 
-After a preview is verified:
-
-1. configure the Maurilio production Vercel environment;
-2. deploy/promote the exact validated artifact;
-3. verify `/maurilio/api/health`;
-4. point Viralio's `MAURILIO_ORIGIN` at that deployment;
-5. smoke test through `https://viralio.net/maurilio`;
-6. configure production Mercado Pago webhook destinations;
-7. enable subscriptions only after provider/webhook verification;
-8. enable internal promotions only after promotion checkout verification.
+1. verify the standalone Maurilio preview;
+2. configure all production environment variables;
+3. complete the Mercado Pago marketplace/OAuth configuration;
+4. run test seller OAuth;
+5. run a real low-value split payment test;
+6. verify seller receipt and Maurilio marketplace fee;
+7. verify Webhook access activation;
+8. point Viralio's `MAURILIO_ORIGIN` at the verified deployment;
+9. smoke test through `https://viralio.net/maurilio`;
+10. enable split payments only after all checks pass.
