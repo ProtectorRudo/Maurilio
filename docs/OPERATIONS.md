@@ -228,3 +228,25 @@ Before closing a Matchday:
 5. inspect bankroll and exposure;
 6. confirm public ledger entry;
 7. write any model learning separately — never rewrite the original prediction.
+
+
+## Cross-device buyer recovery
+
+Premium access is normally identified by the HTTP-only `maurilio_sid` cookie.
+A verified buyer can generate a Recovery Code from `/maurilio/access`.
+
+Security properties:
+
+- the browser sees the raw code only when it is generated;
+- the database stores only a SHA-256 digest;
+- each code expires after 7 days;
+- each code is single-use and is deleted when redeemed;
+- generating a new code replaces the previous code for that buyer subject;
+- redemption never uses a URL token, so the code is not exposed in browser history,
+  link previews, analytics URLs or referrer headers;
+- successful issuance and redemption are recorded in the append-only audit trail;
+- recovery restores only the same subject and its existing active entitlements;
+  it does not create new premium rights.
+
+Premium and buyer routes use `private, no-store`, `noarchive` and
+`Referrer-Policy: no-referrer` headers.
