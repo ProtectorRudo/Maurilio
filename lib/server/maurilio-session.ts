@@ -124,6 +124,20 @@ export async function signUpWithPassword(
   return { response, body };
 }
 
+function accessTokenIsFresh(token: string) {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3 || !parts[1]) return false;
+    const payload = JSON.parse(
+      Buffer.from(parts[1], "base64url").toString("utf8"),
+    ) as { exp?: unknown };
+    const exp = Number(payload.exp);
+    return Number.isFinite(exp) && exp * 1000 > Date.now() + 60_000;
+  } catch {
+    return false;
+  }
+}
+
 async function refreshAccessToken(refreshToken: string) {
   const response = await authFetch("/auth/v1/token?grant_type=refresh_token", {
     method: "POST",
@@ -138,17 +152,31 @@ async function refreshAccessToken(refreshToken: string) {
 export async function routeAccessToken() {
   const jar = await cookies();
   const access = jar.get(ACCESS_COOKIE)?.value;
-  if (access) return access;
+  if (access && accessTokenIsFresh(access)) return access;
 
   const refresh = jar.get(REFRESH_COOKIE)?.value;
-  if (!refresh) return null;
+  if (!refresh) {
+    await clearSessionCookies();
+    return null;
+  }
 
   try {
-    return await refreshAccessToken(refresh);
+    const refreshed = await refreshAccessToken(refresh);
+    if (refreshed) return refreshed;
+    await clearSessionCookies();
+    return null;
   } catch {
     await clearSessionCookies();
     return null;
   }
+}
+
+export async function revokeCurrentSession(accessToken: string) {
+  const response = await authFetch("/auth/v1/logout", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  return response.ok;
 }
 
 export async function userApiFetch(
