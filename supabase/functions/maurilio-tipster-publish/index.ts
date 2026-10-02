@@ -324,6 +324,17 @@ Deno.serve(async (request) => {
       return reply({ error: "tipster_profile_required" }, 409);
     }
 
+    const duplicates = await db<Array<{ id: string; public_id: string }>>(
+      `maurilio_tipster_tips?select=id,public_id&tipster_id=eq.${encodeURIComponent(tipster.id)}&provider_event_id=eq.${encodeURIComponent(eventId)}&provider_selection_key=eq.${encodeURIComponent(selectionKey)}&limit=1`,
+    );
+
+    if (duplicates[0]) {
+      return reply({
+        error: "duplicate_tip",
+        existingPublicId: duplicates[0].public_id,
+      }, 409);
+    }
+
     const bookmaker = bookmakerKey();
 
     const [detail, snapshot] = await Promise.all([
