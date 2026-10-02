@@ -372,6 +372,10 @@ async function createPreference(input: {
         failure: `${siteUrl()}/suscripciones?pago=fallido`,
       },
       auto_return: "approved",
+      expires: true,
+      expiration_date_to: new Date(
+        Date.now() + 24 * 60 * 60 * 1000,
+      ).toISOString(),
       metadata: {
         maurilio_subscription_id: input.subscriptionId,
         maurilio_checkout_attempt_id: input.attemptId,
