@@ -550,3 +550,31 @@ export async function getEntitledPickByTier(
   const rows = await rest<MaurilioPickRow[]>("maurilio_picks", { query });
   return rows[0] ?? null;
 }
+
+
+export async function reserveOrder(input: {
+  externalReference: string;
+  subjectId: string;
+  matchdaySlug: string;
+  tier: "pro" | "elite";
+  amountArs: number;
+}) {
+  return requestJson<{
+    reused: boolean;
+    id: string;
+    external_reference: string;
+    provider_order_id: string | null;
+    checkout_url: string | null;
+    status: "created" | "pending" | "processed";
+    amount_ars: number | string;
+  }>("rpc/maurilio_reserve_order", {
+    method: "POST",
+    body: {
+      p_external_reference: input.externalReference,
+      p_subject_id: input.subjectId,
+      p_matchday_slug: input.matchdaySlug,
+      p_tier: input.tier,
+      p_amount_ars: input.amountArs,
+    },
+  });
+}
