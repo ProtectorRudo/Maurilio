@@ -1,0 +1,226 @@
+export type PublicTipster = {
+  id: string;
+  slug: string;
+  display_name: string;
+  avatar_url: string | null;
+  headline: string | null;
+  sports: string[];
+  specialties: string[];
+  monthly_price_ars: number | null;
+  currency: string;
+  is_verified: boolean;
+  accepting_subscribers: boolean;
+  picks_count_90d: number;
+  roi_pct_90d: number | null;
+  win_rate_pct_90d: number | null;
+  avg_odds_90d: number | null;
+  avg_clv_pct_90d: number | null;
+  max_drawdown_units_90d: number | null;
+  open_tips_count: number;
+  sponsored: boolean;
+  sponsor_priority: number;
+};
+
+export type TipsterHistoryRow = {
+  public_id: string;
+  sport: string;
+  competition: string;
+  event: string;
+  market: string;
+  selection: string | null;
+  bookmaker: string;
+  entry_odds: number | string | null;
+  closing_odds: number | string | null;
+  stake_units: number | string | null;
+  event_start_at: string;
+  published_at: string;
+  settled_at: string | null;
+  result: "win" | "loss" | "push" | "void" | null;
+  profit_units: number | string | null;
+  clv_pct: number | string | null;
+  content_hash: string | null;
+};
+
+type RawTipster = Omit<
+  PublicTipster,
+  | "monthly_price_ars"
+  | "roi_pct_90d"
+  | "win_rate_pct_90d"
+  | "avg_odds_90d"
+  | "avg_clv_pct_90d"
+  | "max_drawdown_units_90d"
+  | "picks_count_90d"
+  | "open_tips_count"
+  | "sponsor_priority"
+> & {
+  monthly_price_ars: number | string | null;
+  roi_pct_90d: number | string | null;
+  win_rate_pct_90d: number | string | null;
+  avg_odds_90d: number | string | null;
+  avg_clv_pct_90d: number | string | null;
+  max_drawdown_units_90d: number | string | null;
+  picks_count_90d: number | string | null;
+  open_tips_count: number | string | null;
+  sponsor_priority: number | string | null;
+};
+
+function config() {
+  const url = process.env.SUPABASE_URL?.replace(/\/$/, "");
+  const key = process.env.SUPABASE_SECRET_KEY;
+  if (!url || !key) return null;
+  return { url, key };
+}
+
+function numeric(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function integer(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : 0;
+}
+
+function normalize(row: RawTipster): PublicTipster {
+  return {
+    ...row,
+    sports: Array.isArray(row.sports) ? row.sports : [],
+    specialties: Array.isArray(row.specialties) ? row.specialties : [],
+    monthly_price_ars: numeric(row.monthly_price_ars),
+    picks_count_90d: integer(row.picks_count_90d),
+    roi_pct_90d: numeric(row.roi_pct_90d),
+    win_rate_pct_90d: numeric(row.win_rate_pct_90d),
+    avg_odds_90d: numeric(row.avg_odds_90d),
+    avg_clv_pct_90d: numeric(row.avg_clv_pct_90d),
+    max_drawdown_units_90d: numeric(row.max_drawdown_units_90d),
+    open_tips_count: integer(row.open_tips_count),
+    sponsor_priority: integer(row.sponsor_priority),
+  };
+}
+
+async function rest<T>(path: string, query: URLSearchParams) {
+  const cfg = config();
+  if (!cfg) throw new Error("database_not_configured");
+
+  const response = await fetch(`${cfg.url}/rest/v1/${path}?${query.toString()}`, {
+    headers: {
+      apikey: cfg.key,
+      Accept: "application/json",
+    },
+    cache: "no-store",
+  });
+
+  const raw = await response.text();
+  if (!response.ok) {
+    console.error("Maurilio marketplace query failed", {
+      path,
+      status: response.status,
+      body: raw.slice(0, 280),
+    });
+    throw new Error(`marketplace_query_failed_${response.status}`);
+  }
+
+  return raw ? (JSON.parse(raw) as T) : (undefined as T);
+}
+
+function matches(card: PublicTipster, query: string) {
+  if (!query) return true;
+  const haystack = [
+    card.display_name,
+    card.headline ?? "",
+    ...card.sports,
+    ...card.specialties,
+  ]
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(query.toLowerCase());
+}
+
+function sortCards(cards: PublicTipster[], sort: string) {
+  return [...cards].sort((a, b) => {
+    if (sort === "roi") {
+      return (
+        (b.roi_pct_90d ?? -9999) - (a.roi_pct_90d ?? -9999) ||
+        b.picks_count_90d - a.picks_count_90d
+      );
+    }
+    if (sort === "clv") {
+      return (
+        (b.avg_clv_pct_90d ?? -9999) - (a.avg_clv_pct_90d ?? -9999) ||
+        b.picks_count_90d - a.picks_count_90d
+      );
+    }
+    return (
+      b.picks_count_90d - a.picks_count_90d ||
+      (b.roi_pct_90d ?? -9999) - (a.roi_pct_90d ?? -9999) ||
+      a.display_name.localeCompare(b.display_name)
+    );
+  });
+}
+
+export async function getMarketplace(
+  input: { q?: string; sport?: string; sort?: string } = {},
+) {
+  const query = new URLSearchParams({ select: "*", limit: "500" });
+  const rows = await rest<RawTipster[]>("maurilio_tipster_search_public", query);
+  const q = (input.q ?? "").trim().slice(0, 80);
+  const sport = (input.sport ?? "").trim().slice(0, 40);
+  const sort = (input.sort ?? "history").trim();
+
+  const cards = rows
+    .map(normalize)
+    .filter((card) => matches(card, q))
+    .filter(
+      (card) =>
+        !sport ||
+        card.sports.some((item) => item.toLowerCase() === sport.toLowerCase()),
+    );
+
+  return {
+    sponsored: cards
+      .filter((card) => card.sponsored)
+      .sort((a, b) => b.sponsor_priority - a.sponsor_priority),
+    results: sortCards(
+      cards.filter((card) => !card.sponsored),
+      sort,
+    ),
+    sports: [...new Set(rows.flatMap((row) => row.sports || []))]
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b)),
+    total: cards.length,
+  };
+}
+
+export async function getTipsterProfile(slug: string) {
+  const cleanSlug = slug.trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9-]{2,39}$/.test(cleanSlug)) return null;
+
+  const cardQuery = new URLSearchParams({
+    select: "*",
+    slug: `eq.${cleanSlug}`,
+    limit: "1",
+  });
+  const cards = await rest<RawTipster[]>(
+    "maurilio_tipster_search_public",
+    cardQuery,
+  );
+  if (!cards[0]) return null;
+  const tipster = normalize(cards[0]);
+
+  const historyQuery = new URLSearchParams({
+    select:
+      "public_id,sport,competition,event,market,selection,bookmaker,entry_odds,closing_odds,stake_units,event_start_at,published_at,settled_at,result,profit_units,clv_pct,content_hash",
+    tipster_id: `eq.${tipster.id}`,
+    status: "eq.settled",
+    order: "settled_at.desc",
+    limit: "100",
+  });
+
+  const history = await rest<TipsterHistoryRow[]>(
+    "maurilio_tipster_tips",
+    historyQuery,
+  );
+
+  return { tipster, history };
+}
