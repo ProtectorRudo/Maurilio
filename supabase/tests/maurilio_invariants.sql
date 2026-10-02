@@ -137,7 +137,7 @@ begin
   end;
 end $$;
 
-do $$
+do $
 begin
   begin
     perform public.maurilio_publish_bundle(
@@ -160,7 +160,67 @@ begin
       sqlerrm
     );
   end;
-end $$;
+end $;
+
+do $
+begin
+  begin
+    perform public.maurilio_close_pick_sale(
+      'CI-INVARIANT-FREE',
+      'price_below_minimum',
+      1.85
+    );
+    insert into maurilio_invariant_results
+    values ('reject_price_stop_above_minimum', false, 'unexpected close');
+  exception when others then
+    insert into maurilio_invariant_results
+    values (
+      'reject_price_stop_above_minimum',
+      sqlerrm='observed_odds_not_below_minimum',
+      sqlerrm
+    );
+  end;
+end $;
+
+select public.maurilio_close_pick_sale(
+  'CI-INVARIANT-FREE',
+  'price_below_minimum',
+  1.70
+);
+
+insert into maurilio_invariant_results
+select
+  'valid_price_risk_stop',
+  sale_status='closed'
+    and sale_closed_reason='price_below_minimum'
+    and last_observed_odds=1.70,
+  concat(
+    'sale_status=',sale_status,
+    ', reason=',sale_closed_reason,
+    ', observed=',last_observed_odds
+  )
+from public.maurilio_picks
+where public_id='CI-INVARIANT-FREE';
+
+do $
+begin
+  begin
+    perform public.maurilio_close_pick_sale(
+      'CI-INVARIANT-FREE',
+      'manual_risk_stop',
+      null
+    );
+    insert into maurilio_invariant_results
+    values ('risk_stop_irreversible', false, 'unexpected second close');
+  exception when others then
+    insert into maurilio_invariant_results
+    values (
+      'risk_stop_irreversible',
+      sqlerrm='sale_already_closed',
+      sqlerrm
+    );
+  end;
+end $;
 
 select public.maurilio_settle_pick('CI-INVARIANT-FREE','win',1.90);
 
