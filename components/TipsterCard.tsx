@@ -26,9 +26,7 @@ export default function TipsterCard({ tipster }: { tipster: PublicTipster }) {
       ) : null}
 
       <div className={styles.identity}>
-        <div className={styles.avatar}>
-          {tipster.avatar_url ? <img src={tipster.avatar_url} alt="" /> : initials}
-        </div>
+        <div className={styles.avatar}>{initials}</div>
         <div>
           <div className={styles.name}>
             {tipster.display_name}
