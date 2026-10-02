@@ -43,17 +43,20 @@ function marketplaceConfig() {
   };
 }
 
-function platformFeeBps() {
-  const value = Number(Deno.env.get("MAURILIO_PLATFORM_FEE_BPS"));
+async function platformFeeBps() {
+  const rows = await db<Array<{ platform_fee_bps: number | null }>>(
+    "maurilio_platform_settings?select=platform_fee_bps&singleton=eq.true&limit=1",
+  );
+  const value = Number(rows[0]?.platform_fee_bps);
   return Number.isInteger(value) && value > 0 && value <= 5000 ? value : null;
 }
 
-function paymentsConfigured() {
+async function paymentsConfigured() {
   return Boolean(
     Deno.env.get("MAURILIO_SPLIT_PAYMENTS_ENABLED") === "1" &&
     marketplaceConfig() &&
     Deno.env.get("MERCADOPAGO_WEBHOOK_SECRET") &&
-    platformFeeBps(),
+    await platformFeeBps(),
   );
 }
 
@@ -452,11 +455,11 @@ Deno.serve(async (request) => {
 
     if (action === "status") {
       return reply({
-        configured: paymentsConfigured(),
+        configured: await paymentsConfigured(),
         provider: "mercado_pago",
         mode: "split_1_1",
         renewalMode: "manual",
-        platformFeeBps: platformFeeBps(),
+        platformFeeBps: await platformFeeBps(),
       });
     }
 
@@ -552,7 +555,7 @@ Deno.serve(async (request) => {
       return reply({ error: "invalid_action" }, 400);
     }
 
-    if (!paymentsConfigured()) {
+    if (!await paymentsConfigured()) {
       return reply({ error: "subscriptions_disabled" }, 503);
     }
 
@@ -599,7 +602,7 @@ Deno.serve(async (request) => {
       return reply({ error: "tipster_payment_account_required" }, 409);
     }
 
-    const feeBps = platformFeeBps();
+    const feeBps = await platformFeeBps();
     if (!feeBps) {
       return reply({ error: "platform_fee_not_configured" }, 503);
     }
