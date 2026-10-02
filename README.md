@@ -31,15 +31,15 @@ Maurilio separa reputación de marketing:
 - sesión HTTP-only;
 - marketplace y búsqueda de tipsters;
 - perfil público con historial real;
-- checkout de suscripción recurrente;
-- `Mis suscripciones` con cancelación de renovación;
-- acceso conservado hasta el fin del período ya abonado;
+- compra de 30 días de acceso mediante Split de Pagos 1:1;
+- `Mis suscripciones` con período de acceso y renovación manual;
+- acceso vigente durante el período efectivamente abonado;
 - `Mis tips` con feed privado.
 
 ### Tipster
 
 - activación explícita y autenticada del rol;
-- creación/edición de perfil y precio mensual;
+- creación/edición de perfil y precio por 30 días;
 - apertura/cierre de nuevas suscripciones;
 - Estudio Bet365;
 - publicación sólo desde líneas Bet365 vigentes;
@@ -47,14 +47,14 @@ Maurilio separa reputación de marketing:
 - publicación inmutable;
 - liquidación automática de mercados soportados;
 - captura de cuota de cierre / CLV;
-- dashboard de suscriptores, bruto, comisión, neto y payouts;
+- conexión OAuth de Mercado Pago y dashboard de ventas/comisión;
 - compra de publicidad interna claramente marcada como `Patrocinado`.
 
 ### Backend y seguridad
 
 - RLS y acceso de tablas restringido;
 - webhooks separados para suscripciones y promociones;
-- ledger de pagos, comisión y payouts;
+- ledger de pagos y comisión sin custodia de fondos del tipster;
 - settlement automático programado;
 - Bet365 gateway restringido a tipsters/admin;
 - rutas privadas `no-store` / `noindex`;
@@ -81,4 +81,4 @@ El deploy de Maurilio es manual y fail-closed. Ver:
 - [Database migrations](supabase/README.md)
 
 No habilitar cobros de producción hasta completar el smoke test de registro,
-publicación, suscripción, webhook, feed privado, settlement y cancelación.
+publicación, conexión Mercado Pago, split checkout, webhook, feed privado y settlement.
