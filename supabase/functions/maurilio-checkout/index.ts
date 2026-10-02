@@ -185,6 +185,7 @@ async function createProviderOrder(input: {
   externalReference: string;
   amount: number;
   tier: Tier;
+  eventStartAt: string;
 }) {
   const token = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN");
   if (!token) throw new Error("mercadopago_not_configured");
@@ -195,6 +196,12 @@ async function createProviderOrder(input: {
       ? "Maurilio — High Conviction"
       : "Maurilio — Análisis PRO";
   const root = siteUrl();
+  const eventStartMs = new Date(input.eventStartAt).getTime();
+  const remainingSeconds = Math.floor((eventStartMs - Date.now()) / 1000);
+
+  if (!Number.isFinite(eventStartMs) || remainingSeconds <= 0) {
+    throw new Error("event_started");
+  }
 
   const res = await fetch("https://api.mercadopago.com/v1/orders", {
     method: "POST",
@@ -209,6 +216,7 @@ async function createProviderOrder(input: {
       processing_mode: "manual",
       total_amount: amount,
       external_reference: input.externalReference,
+      expiration_time: `PT${remainingSeconds}S`,
       description: title,
       items: [{
         title,
@@ -371,6 +379,7 @@ Deno.serve(async (req: Request) => {
         externalReference: reservedReference,
         amount,
         tier: requestedTier,
+        eventStartAt: pick.event_start_at!,
       });
 
       await patchOrder(reservedReference, {
