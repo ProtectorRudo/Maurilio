@@ -612,8 +612,9 @@ Deno.serve(async (request) => {
       current_period_end: string | null;
       monthly_price_ars: number | string;
       platform_fee_bps: number | null;
+      provider_collector_id: string | null;
     }>>(
-      `maurilio_tipster_subscriptions?select=id,status,renewal_mode,current_period_end,monthly_price_ars,platform_fee_bps&subscriber_user_id=eq.${encodeURIComponent(user.id)}&tipster_id=eq.${encodeURIComponent(tipster.id)}&status=in.(pending,active,past_due,paused)&order=created_at.desc&limit=1`,
+      `maurilio_tipster_subscriptions?select=id,status,renewal_mode,current_period_end,monthly_price_ars,platform_fee_bps,provider_collector_id&subscriber_user_id=eq.${encodeURIComponent(user.id)}&tipster_id=eq.${encodeURIComponent(tipster.id)}&status=in.(pending,active,past_due,paused)&order=created_at.desc&limit=1`,
     );
 
     let subscription = existing[0] ?? null;
@@ -655,8 +656,10 @@ Deno.serve(async (request) => {
         Math.round(frozenAmount * 100) === Math.round(amount * 100);
       const sameFee =
         Number.isInteger(frozenFeeBps) && frozenFeeBps === feeBps;
+      const sameCollector =
+        subscription.provider_collector_id === account.provider_user_id;
 
-      if (!sameAmount || !sameFee) {
+      if (!sameAmount || !sameFee || !sameCollector) {
         await patchSubscription(subscription.id, {
           status: "cancelled",
           cancelled_at: new Date().toISOString(),
