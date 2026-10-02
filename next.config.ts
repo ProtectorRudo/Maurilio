@@ -43,6 +43,8 @@ const nextConfig: NextConfig = {
       },
       { source: "/api/:path*", headers: privateHeaders },
       { source: "/ingresar", headers: privateHeaders },
+      { source: "/recuperar", headers: privateHeaders },
+      { source: "/actualizar-clave", headers: privateHeaders },
       { source: "/mis-tips/:path*", headers: privateHeaders },
       { source: "/suscripciones/:path*", headers: privateHeaders },
       { source: "/estudio/:path*", headers: privateHeaders },
