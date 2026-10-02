@@ -13,7 +13,8 @@ export default function ParaTipstersPage() {
         <h1>Publicá. Construí historial. Cobrá suscripciones.</h1>
         <p>
           Maurilio registra tus tips antes del partido y muestra tus resultados
-          públicamente. Vos elegís cuánto cobrar por mes.
+          públicamente. Vos elegís el precio por 30 días y cobrás directo en tu
+          Mercado Pago.
         </p>
 
         <div className={styles.steps}>
@@ -29,8 +30,8 @@ export default function ParaTipstersPage() {
           </article>
           <article className={styles.step}>
             <span>03</span>
-            <h3>Sumá suscriptores</h3>
-            <p>Tu historial queda visible y tus próximos tips, bloqueados.</p>
+            <h3>Cobrá directo</h3>
+            <p>El usuario paga en Mercado Pago. Maurilio sólo recibe su comisión.</p>
           </article>
         </div>
 
