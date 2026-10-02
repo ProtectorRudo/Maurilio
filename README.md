@@ -12,7 +12,7 @@ Maurilio separa reputación de marketing:
 - los tips publicados son inmutables;
 - resultados, P&L y CLV se liquidan desde evidencia registrada;
 - la publicidad interna sólo compra visibilidad y nunca altera métricas;
-- Maurilio cobra una comisión sobre cada suscripción procesada.
+- Maurilio cobra únicamente la comisión configurada por Admin sobre cada compra procesada; el dinero del tipster no es custodiado por Maurilio.
 
 ## Stack
 
