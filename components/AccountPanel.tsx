@@ -59,6 +59,7 @@ export default function AccountPanel() {
         <Link href="/suscripciones">Suscripciones</Link>
         {account.tipster ? <Link href="/panel-tipster">Panel tipster</Link> : <Link href="/para-tipsters">Crear perfil tipster</Link>}
         {account.tipster ? <Link href="/estudio">Publicar tip</Link> : null}
+        {account.role === "admin" ? <Link href="/admin">Administración</Link> : null}
         <button className={styles.secondary} type="button" onClick={() => void logout()}>
           Cerrar sesión
         </button>
