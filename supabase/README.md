@@ -15,6 +15,7 @@ Current Maurilio migration versions:
 8. `20261001231515_enforce_maurilio_publication_immutability.sql`
 9. `20261001232514_enforce_maurilio_robust_lower_bound.sql`
 10. `20261001233143_add_maurilio_event_start_gate.sql`
+11. `20261001233859_add_maurilio_sale_risk_stop.sql`
 
 The final migration contains the canonical publication RPC and immutability
 triggers. Earlier publication migrations are retained to match applied migration
@@ -50,5 +51,6 @@ Sensitive RPCs are also service-role only:
 - `maurilio_publish_bundle(jsonb)`
 - `maurilio_settle_pick(text,text,numeric)`
 - `maurilio_risk_snapshot()`
+- `maurilio_close_pick_sale(text,text,numeric)`
 
 No service-role key may be exposed to the browser.
