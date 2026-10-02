@@ -27,3 +27,12 @@ export function recoveryCodeHash(normalizedCode: string) {
     .update(`maurilio-access-recovery:${normalizedCode}`)
     .digest("hex");
 }
+
+
+export function accessTag(subjectId: string) {
+  return createHash("sha256")
+    .update(`maurilio-access-tag:${subjectId}`)
+    .digest("hex")
+    .slice(0, 10)
+    .toUpperCase();
+}
