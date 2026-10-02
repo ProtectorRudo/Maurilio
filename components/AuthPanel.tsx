@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import styles from "./account.module.css";
 
 type Mode = "login" | "signup";
@@ -108,6 +109,12 @@ export default function AuthPanel({ nextPath }: { nextPath: string }) {
         <p className={styles.helper}>
           Tu sesión se guarda en una cookie HTTP-only. La contraseña no se almacena en Maurilio.
         </p>
+
+        {mode === "login" ? (
+          <p className={styles.helper}>
+            <Link href="/recuperar">Olvidé mi contraseña</Link>
+          </p>
+        ) : null}
 
         {message ? (
           <div className={`${styles.message} ${message.kind === "error" ? styles.error : styles.success}`}>
