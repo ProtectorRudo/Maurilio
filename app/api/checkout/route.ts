@@ -3,7 +3,8 @@ import {
   databaseConfigured,
   getLatestPublishedMatchday,
   getPublishedPickByTier,
-  insertOrder,
+  hasActiveEntitlement,
+  reserveOrder,
   updateOrderByExternalReference,
 } from "@/lib/server/supabase-rest";
 import {
@@ -173,26 +174,75 @@ export async function POST(request: NextRequest) {
     ? currentCookie!
     : crypto.randomUUID();
 
+  const existingAccess = await hasActiveEntitlement(
+    subjectId,
+    activeMatchday.slug,
+    tier,
+  ).catch(() => false);
+
+  if (existingAccess) {
+    return NextResponse.json(
+      { error: "already_unlocked" },
+      { status: 409 },
+    );
+  }
+
   const externalReference =
     `maurilio_${activeMatchday.slug}_${tier}_${crypto.randomUUID()}`;
 
+  let reservedReference = externalReference;
+
   try {
-    await insertOrder({
-      external_reference: externalReference,
-      subject_id: subjectId,
-      matchday_slug: activeMatchday.slug,
+    const reservation = await reserveOrder({
+      externalReference,
+      subjectId,
+      matchdaySlug: activeMatchday.slug,
       tier,
-      amount_ars: amount,
+      amountArs: amount,
     });
 
+    reservedReference = reservation.external_reference;
+
+    if (reservation.reused) {
+      if (reservation.checkout_url && reservation.provider_order_id) {
+        const response = NextResponse.json(
+          {
+            orderId: reservation.provider_order_id,
+            checkoutUrl: reservation.checkout_url,
+            reused: true,
+          },
+          {
+            headers: {
+              "Cache-Control": "private, no-store, max-age=0",
+            },
+          },
+        );
+
+        response.cookies.set(ACCESS_COOKIE, subjectId, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/maurilio",
+          maxAge: 60 * 60 * 24 * 90,
+        });
+
+        return response;
+      }
+
+      return NextResponse.json(
+        { error: "checkout_initializing" },
+        { status: 409 },
+      );
+    }
+
     const providerOrder = await createMercadoPagoOrder({
-      externalReference,
+      externalReference: reservedReference,
       amount,
       tier,
       siteUrl: SITE_URL,
     });
 
-    await updateOrderByExternalReference(externalReference, {
+    await updateOrderByExternalReference(reservedReference, {
       provider_order_id: providerOrder.id,
       status: mapProviderOrderStatus(providerOrder),
       checkout_url: providerOrder.checkout_url,
@@ -226,12 +276,12 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error("Checkout initialization failed", {
-      externalReference,
+      externalReference: reservedReference,
       error: error instanceof Error ? error.message : "unknown",
     });
 
     try {
-      await updateOrderByExternalReference(externalReference, {
+      await updateOrderByExternalReference(reservedReference, {
         status: "failed",
       });
     } catch {
