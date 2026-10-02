@@ -40,6 +40,12 @@ export default function TerminosPage() {
         </div>
 
         <div className={styles.notice}>
+          <strong>Medios de pago y reembolsos.</strong> Los medios disponibles,
+          acreditaciones y devoluciones dependen de Mercado Pago y de las reglas
+          vigentes para Split 1:1. Maurilio no controla esos tiempos ni condiciones.
+        </div>
+
+        <div className={styles.notice}>
           <strong>Disponibilidad.</strong> Los feeds deportivos, cuotas y servicios
           externos pueden sufrir retrasos o interrupciones. Si una cuota Bet365 no
           puede verificarse, Maurilio no debe inventarla ni sustituirla por otra casa.
