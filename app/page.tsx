@@ -1,3 +1,4 @@
+import Link from "next/link";
 import MarketplaceHeader from "@/components/MarketplaceHeader";
 import TipsterCard from "@/components/TipsterCard";
 import styles from "@/components/marketplace.module.css";
@@ -9,6 +10,9 @@ type SearchParams = Promise<{
   q?: string;
   sport?: string;
   sort?: string;
+  verified?: string;
+  available?: string;
+  minHistory?: string;
 }>;
 
 export default async function Home({
@@ -20,23 +24,47 @@ export default async function Home({
   const q = typeof params.q === "string" ? params.q : "";
   const sport = typeof params.sport === "string" ? params.sport : "";
   const sort = typeof params.sort === "string" ? params.sort : "history";
+  const verified = params.verified === "1";
+  const available = params.available === "1";
+  const parsedHistory = Number(params.minHistory);
+  const minHistory = Number.isFinite(parsedHistory)
+    ? Math.max(0, Math.min(500, Math.trunc(parsedHistory)))
+    : 0;
 
   let marketplace: Awaited<ReturnType<typeof getMarketplace>> = {
     sponsored: [],
     results: [],
     sports: [],
     total: 0,
+    summary: {
+      totalTipsters: 0,
+      verifiedTipsters: 0,
+      activeSubscribers: 0,
+      picks90d: 0,
+      acceptingSubscribers: 0,
+    },
   };
   let unavailable = false;
 
   try {
-    marketplace = await getMarketplace({ q, sport, sort });
+    marketplace = await getMarketplace({
+      q,
+      sport,
+      sort,
+      verified,
+      available,
+      minHistory,
+    });
   } catch (error) {
     unavailable = true;
     console.error("Unable to load Maurilio marketplace", {
       error: error instanceof Error ? error.message : "unknown",
     });
   }
+
+  const filtersActive = Boolean(
+    q || sport || verified || available || minHistory > 0 || sort !== "history",
+  );
 
   return (
     <main className={styles.shell}>
@@ -45,57 +73,127 @@ export default async function Home({
       <section className={styles.hero}>
         <div>
           <span className={styles.eyebrow}>Marketplace de tipsters verificables</span>
-          <h1>Seguí personas por datos. No por promesas.</h1>
+          <h1>Compará historial. Después decidí a quién seguir.</h1>
           <p>
-            Cada resultado público sale del historial registrado dentro de Maurilio.
-            Los tips futuros permanecen bloqueados hasta que te suscribís, y la cuota
-            de entrada se captura desde Bet365.
+            Maurilio registra tips antes del evento, captura la cuota desde Bet365
+            y expone el historial liquidado. El contenido futuro queda bloqueado
+            para suscriptores.
           </p>
+
+          <div className={styles.heroActions}>
+            <a className={styles.heroPrimary} href="#ranking">Explorar tipsters</a>
+            <Link className={styles.heroSecondary} href="/para-tipsters">
+              Quiero ser tipster
+            </Link>
+          </div>
         </div>
 
         <aside className={styles.heroPanel}>
-          <span className={styles.eyebrow}>La regla de Maurilio</span>
+          <span className={styles.eyebrow}>Qué podés auditar</span>
           <div className={styles.proofRow}>
             <div className={styles.proof}>
-              <b>100%</b>
-              <span>Historial pasado visible</span>
+              <b>ROI + P&L</b>
+              <span>Rendimiento sobre tips liquidados</span>
             </div>
             <div className={styles.proof}>
-              <b>Bet365</b>
-              <span>Cuota de entrada registrada</span>
+              <b>CLV</b>
+              <span>Entrada vs. cierre Bet365</span>
             </div>
             <div className={styles.proof}>
-              <b>Inmutable</b>
-              <span>El tip publicado no se reescribe</span>
+              <b>Drawdown</b>
+              <span>Riesgo histórico en unidades</span>
             </div>
           </div>
+          <p className={styles.heroFinePrint}>
+            Una muestra grande no garantiza ganancias futuras. Sirve para evaluar
+            evidencia con más contexto.
+          </p>
         </aside>
       </section>
 
-      <section className={styles.searchWrap} aria-label="Buscar tipsters">
-        <form className={styles.search} method="get">
-          <input
-            type="search"
-            name="q"
-            defaultValue={q}
-            placeholder="Buscar por tipster, deporte o especialidad"
-            aria-label="Buscar tipsters"
-          />
+      <section className={styles.marketStrip} aria-label="Resumen del marketplace">
+        <div>
+          <small>Tipsters</small>
+          <b>{marketplace.summary.totalTipsters}</b>
+        </div>
+        <div>
+          <small>Verificados</small>
+          <b>{marketplace.summary.verifiedTipsters}</b>
+        </div>
+        <div>
+          <small>Tips liquidados · 90d</small>
+          <b>{marketplace.summary.picks90d}</b>
+        </div>
+        <div>
+          <small>Suscripciones activas</small>
+          <b>{marketplace.summary.activeSubscribers}</b>
+        </div>
+      </section>
 
-          <select name="sport" defaultValue={sport} aria-label="Filtrar por deporte">
-            <option value="">Todos los deportes</option>
-            {marketplace.sports.map((item) => (
-              <option key={item} value={item}>{item}</option>
-            ))}
-          </select>
+      <section className={styles.searchWrap} aria-label="Buscar tipsters" id="ranking">
+        <form className={styles.searchPanel} method="get">
+          <div className={styles.searchMain}>
+            <input
+              type="search"
+              name="q"
+              defaultValue={q}
+              placeholder="Buscar tipster, deporte o especialidad"
+              aria-label="Buscar tipsters"
+            />
 
-          <select name="sort" defaultValue={sort} aria-label="Ordenar tipsters">
-            <option value="history">Más historial</option>
-            <option value="roi">ROI 90 días</option>
-            <option value="clv">CLV 90 días</option>
-          </select>
+            <select name="sport" defaultValue={sport} aria-label="Filtrar por deporte">
+              <option value="">Todos los deportes</option>
+              {marketplace.sports.map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
 
-          <button type="submit">Buscar</button>
+            <select name="sort" defaultValue={sort} aria-label="Ordenar tipsters">
+              <option value="history">Más historial</option>
+              <option value="roi">Mayor ROI 90d</option>
+              <option value="clv">Mayor CLV 90d</option>
+              <option value="drawdown">Menor drawdown</option>
+              <option value="subscribers">Más suscriptores</option>
+              <option value="recent">Actividad reciente</option>
+              <option value="price">Menor precio</option>
+            </select>
+
+            <select
+              name="minHistory"
+              defaultValue={String(minHistory)}
+              aria-label="Mínimo de tips liquidados"
+            >
+              <option value="0">Cualquier muestra</option>
+              <option value="25">25+ tips</option>
+              <option value="50">50+ tips</option>
+              <option value="100">100+ tips</option>
+            </select>
+
+            <button type="submit">Aplicar</button>
+          </div>
+
+          <div className={styles.quickFilters}>
+            <label>
+              <input
+                type="checkbox"
+                name="verified"
+                value="1"
+                defaultChecked={verified}
+              />
+              Sólo verificados
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                name="available"
+                value="1"
+                defaultChecked={available}
+              />
+              Aceptando suscriptores
+            </label>
+            <span>{marketplace.total} resultado{marketplace.total === 1 ? "" : "s"}</span>
+            {filtersActive ? <Link href="/">Limpiar filtros</Link> : null}
+          </div>
         </form>
       </section>
 
@@ -107,7 +205,7 @@ export default async function Home({
                 <span className={styles.eyebrow}>Publicidad interna</span>
                 <h2>Destacados</h2>
               </div>
-              <p>Posiciones pagadas. El rendimiento nunca se altera por publicidad.</p>
+              <p>La posición es paga. Las métricas son las mismas del historial real.</p>
             </div>
             <div className={styles.grid}>
               {marketplace.sponsored.map((tipster) => (
@@ -119,10 +217,10 @@ export default async function Home({
 
         <div className={styles.sectionTop}>
           <div>
-            <span className={styles.eyebrow}>Explorar</span>
+            <span className={styles.eyebrow}>Ranking público · últimos 90 días</span>
             <h2>Tipsters</h2>
           </div>
-          <p>{marketplace.total} resultado{marketplace.total === 1 ? "" : "s"}</p>
+          <p>No existe un “mejor” automático: compará retorno, riesgo y muestra.</p>
         </div>
 
         {unavailable ? (
@@ -136,10 +234,22 @@ export default async function Home({
               <TipsterCard key={tipster.id} tipster={tipster} />
             ))}
           </div>
-        ) : (
+        ) : filtersActive ? (
           <div className={styles.empty}>
             <b>No encontramos tipsters con esos filtros.</b>
-            Probá otra búsqueda o quitá alguno de los filtros.
+            Probá ampliar la muestra, quitar filtros o cambiar el deporte.
+            <div className={styles.emptyActions}>
+              <Link href="/">Ver todos</Link>
+            </div>
+          </div>
+        ) : (
+          <div className={styles.empty}>
+            <b>Todavía no hay tipsters públicos con historial real.</b>
+            El marketplace arranca vacío antes que rellenarse con estadísticas ficticias.
+            <div className={styles.emptyActions}>
+              <Link href="/para-tipsters">Ser de los primeros tipsters</Link>
+              <Link href="/como-funciona">Cómo se verifica el historial</Link>
+            </div>
           </div>
         )}
       </section>
