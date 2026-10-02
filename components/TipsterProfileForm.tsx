@@ -91,7 +91,7 @@ export default function TipsterProfileForm() {
 
       setMessage({
         kind: "success",
-        text: "Perfil guardado. Tu historial público se construirá sólo con tips registrados en Maurilio.",
+        text: "Perfil guardado. Ya podés entrar al Estudio y publicar tu primer tip.",
       });
 
       const refreshed = await fetch("/maurilio/api/account", { cache: "no-store" });
@@ -152,19 +152,19 @@ export default function TipsterProfileForm() {
       </div>
 
       <div className={styles.field}>
-        <label htmlFor="tipster-headline">Descripción corta</label>
+        <label htmlFor="tipster-headline">Qué hacés</label>
         <textarea
           id="tipster-headline"
           name="headline"
           maxLength={120}
           defaultValue={tipster?.headline ?? ""}
-          placeholder="Qué mercados trabajás y cómo pensás tu proceso."
+          placeholder="Ej: Fútbol europeo · goles y tarjetas"
         />
       </div>
 
       <div className={styles.split}>
         <div className={styles.field}>
-          <label htmlFor="tipster-sports">Deportes</label>
+          <label htmlFor="tipster-sports">Deporte</label>
           <input
             id="tipster-sports"
             name="sports"
@@ -173,7 +173,7 @@ export default function TipsterProfileForm() {
           />
         </div>
         <div className={styles.field}>
-          <label htmlFor="tipster-specialties">Especialidades</label>
+          <label htmlFor="tipster-specialties">Especialidad</label>
           <input
             id="tipster-specialties"
             name="specialties"
@@ -184,7 +184,7 @@ export default function TipsterProfileForm() {
       </div>
 
       <div className={styles.field}>
-        <label htmlFor="tipster-price">Precio mensual ARS</label>
+        <label htmlFor="tipster-price">Precio por mes</label>
         <input
           id="tipster-price"
           name="monthlyPriceArs"
@@ -203,8 +203,7 @@ export default function TipsterProfileForm() {
           defaultChecked={Boolean(tipster?.acceptingSubscribers)}
         />
         <span>
-          Quiero aceptar nuevas suscripciones. Requiere un precio mensual válido;
-          podés apagar esta opción sin borrar tu historial.
+          Aceptar nuevas suscripciones. Podés apagarlo cuando quieras sin perder tu historial.
         </span>
       </label>
 
