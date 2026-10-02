@@ -37,7 +37,6 @@ function date(value: string | null | undefined) {
 export default function SubscriberHub() {
   const [items, setItems] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
-  const [working, setWorking] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   async function load() {
@@ -112,8 +111,6 @@ export default function SubscriberHub() {
           {items.map((item) => {
             const name = item.tipster?.display_name ?? "Tipster";
             const slug = item.tipster?.slug;
-            const canCancel = ["active", "pending", "past_due", "paused"].includes(item.status);
-
             return (
               <article className={styles.item} key={item.id}>
                 <div>
@@ -128,20 +125,13 @@ export default function SubscriberHub() {
                   </span>
                   <h3>{slug ? <Link href={`/tipsters/${slug}`}>{name}</Link> : name}</h3>
                   <p>
-                    {money(item.monthly_price_ars)} / mes
+                    {money(item.monthly_price_ars)} · 30 días
                     {item.current_period_end ? ` · acceso hasta ${date(item.current_period_end)}` : ""}
                   </p>
                 </div>
 
-                {canCancel ? (
-                  <button
-                    className={styles.secondary}
-                    type="button"
-                    disabled={working === item.id}
-                    onClick={() => void cancel(item.id)}
-                  >
-                    {working === item.id ? "Cancelando…" : "Cancelar renovación"}
-                  </button>
+                {item.status === "active" ? (
+                  <span className={styles.manualRenewal}>Renovación manual</span>
                 ) : null}
               </article>
             );
