@@ -46,10 +46,10 @@ export default function TipsterDashboard() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [promotion, setPromotion] = useState<PromotionStatus | null>(null);
   const [busyDays, setBusyDays] = useState<number | null>(null);
+  const [payoutBusy, setPayoutBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    void (async () => {
+  async function loadDashboard() {
       const dashboardResponse = await fetch("/maurilio/api/tipster/dashboard", { cache: "no-store" });
       if (dashboardResponse.status === 401) {
         window.location.assign("/maurilio/ingresar?next=%2Fpanel-tipster");
@@ -67,8 +67,45 @@ export default function TipsterDashboard() {
         const promoResponse = await fetch("/maurilio/api/promotions", { cache: "no-store" });
         if (promoResponse.ok) setPromotion(await promoResponse.json() as PromotionStatus);
       }
-    })().catch(() => setDashboard({ error: "unavailable" }));
+  }
+
+  useEffect(() => {
+    void loadDashboard().catch(() => setDashboard({ error: "unavailable" }));
   }, []);
+
+  async function requestPayout() {
+    if (!dashboard) return;
+    setPayoutBusy(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch("/maurilio/api/tipster/payout", {
+        method: "POST",
+      });
+      const body = await response.json() as {
+        error?: string;
+        amountArs?: number | string;
+      };
+
+      if (!response.ok) {
+        setMessage(
+          body.error?.includes("payout_already_pending")
+            ? "Ya existe una solicitud de cobro pendiente."
+            : body.error?.includes("no_payout_balance")
+              ? "No hay saldo disponible para solicitar."
+              : "No pudimos crear la solicitud de cobro.",
+        );
+        return;
+      }
+
+      setMessage(`Solicitud creada por ${money(body.amountArs)}. Queda pendiente de procesamiento.`);
+      await loadDashboard();
+    } catch {
+      setMessage("No pudimos crear la solicitud de cobro.");
+    } finally {
+      setPayoutBusy(false);
+    }
+  }
 
   async function buyPromotion(days: number) {
     setBusyDays(days);
@@ -128,6 +165,32 @@ export default function TipsterDashboard() {
         <Link href="/estudio">Publicar nuevo tip</Link>
         <Link href="/para-tipsters">Editar perfil y precio</Link>
       </div>
+
+      <section className={styles.payoutBox}>
+        <h3>Cobros</h3>
+        <p>
+          Solicitá el retiro del saldo disponible completo. Mientras exista una
+          solicitud pendiente, no se puede crear otra.
+        </p>
+        <div className={styles.statusRow}>
+          <button
+            className={styles.primary}
+            type="button"
+            disabled={
+              payoutBusy ||
+              Number(dashboard.balanceArs ?? 0) <= 0 ||
+              Number(dashboard.pendingPayoutArs ?? 0) > 0
+            }
+            onClick={() => void requestPayout()}
+          >
+            {payoutBusy
+              ? "Solicitando…"
+              : Number(dashboard.pendingPayoutArs ?? 0) > 0
+                ? `Cobro pendiente · ${money(dashboard.pendingPayoutArs)}`
+                : `Solicitar ${money(dashboard.balanceArs)}`}
+          </button>
+        </div>
+      </section>
 
       <section className={styles.promo}>
         <h3>Publicidad interna</h3>
