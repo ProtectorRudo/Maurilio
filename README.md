@@ -31,6 +31,7 @@ Implementado:
 - FREE reveal interactivo
 - PRO / ELITE protegidos por entitlement
 - Biblioteca “Mis informes” con acceso histórico exacto por Matchday/tier
+- Recovery Code single-use para recuperar compras en otro dispositivo sin cuentas ni email
 - Checkout Mercado Pago fail-closed
 - Webhook firmado + verificación independiente de order
 - Supabase con RLS y acceso server-only
