@@ -48,6 +48,7 @@ type PremiumReport = {
   saleClosedReason: string | null;
   lastObservedOdds: number | null;
   lastObservedAt: string | null;
+  accessTag: string;
 };
 
 const BASE_PATH = "/maurilio";
@@ -223,7 +224,12 @@ export default function PremiumAccessModal({
           <div className="premium-report reveal-enter">
             <div className="premium-report-head">
               <span>{elite ? "THE LOCKER" : "VAR AUDIT"}</span>
-              <b>ACCESS VERIFIED</b>
+              <b>ACCESS VERIFIED · {report.accessTag}</b>
+            </div>
+            <div className="premium-watermark" aria-hidden="true">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <span key={index}>MAURILIO · {report.accessTag}</span>
+              ))}
             </div>
             <small>{report.competition}</small>
             <h3>{report.event}</h3>
@@ -273,6 +279,7 @@ export default function PremiumAccessModal({
 
             <div className="premium-proof">
               <span>ID {report.id}</span>
+              <span>ACCESS TAG {report.accessTag}</span>
               <span>{report.capturedAt ? `CUOTA CAPTURADA · ${dateTime(report.capturedAt)}` : "CAPTURA PENDIENTE"}</span>
               <span>INICIO · {dateTime(report.eventStartAt)}</span>
             </div>
