@@ -21,6 +21,7 @@ export async function POST(request: Request) {
       sports?: unknown;
       specialties?: unknown;
       monthlyPriceArs?: unknown;
+      acceptingSubscribers?: unknown;
     };
 
     const slug = typeof body.slug === "string" ? body.slug.trim().toLowerCase() : "";
@@ -34,15 +35,29 @@ export async function POST(request: Request) {
     const specialties = Array.isArray(body.specialties)
       ? body.specialties.filter((x): x is string => typeof x === "string").slice(0, 12)
       : [];
-    const price = Number(body.monthlyPriceArs);
+    const price =
+      body.monthlyPriceArs === null || body.monthlyPriceArs === ""
+        ? null
+        : Number(body.monthlyPriceArs);
+    const accepting =
+      typeof body.acceptingSubscribers === "boolean"
+        ? body.acceptingSubscribers
+        : false;
 
     if (
       !/^[a-z0-9][a-z0-9-]{2,39}$/.test(slug) ||
       displayName.length < 2 ||
       displayName.length > 60 ||
-      (!Number.isFinite(price) && body.monthlyPriceArs !== null)
+      (price !== null && (!Number.isFinite(price) || price < 0))
     ) {
       return NextResponse.json({ error: "invalid_profile" }, { status: 400 });
+    }
+
+    if (accepting && (price === null || price <= 0)) {
+      return NextResponse.json(
+        { error: "valid_subscription_price_required" },
+        { status: 400 },
+      );
     }
 
     const activate = await callRpc("maurilio_become_tipster", token);
@@ -56,12 +71,24 @@ export async function POST(request: Request) {
       p_headline: headline || null,
       p_sports: sports,
       p_specialties: specialties,
-      p_monthly_price_ars:
-        Number.isFinite(price) && price >= 0 ? price : null,
+      p_monthly_price_ars: price,
     });
 
-    const payload = await responseJson(response);
-    return NextResponse.json(payload, { status: response.status });
+    const profile = await responseJson(response);
+    if (!response.ok) {
+      return NextResponse.json(profile, { status: response.status });
+    }
+
+    const salesResponse = await callRpc("maurilio_set_tipster_sales", token, {
+      p_accepting: accepting,
+    });
+    const sales = await responseJson(salesResponse);
+
+    if (!salesResponse.ok) {
+      return NextResponse.json(sales, { status: salesResponse.status });
+    }
+
+    return NextResponse.json({ profile, sales });
   } catch (error) {
     console.error("Tipster profile update failed", error);
     return NextResponse.json({ error: "profile_unavailable" }, { status: 503 });
