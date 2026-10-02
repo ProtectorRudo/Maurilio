@@ -107,7 +107,10 @@ export default async function ArchivePage() {
           <span className="brand-mark">M</span>
           <span><b>MAURILIO</b><small>QUANT FOOTBALL</small></span>
         </a>
-        <a href="/maurilio" className="text-button">Volver al Matchday</a>
+        <nav className="nav-links" aria-label="Archivo">
+          <a href="/maurilio/integrity">Integridad</a>
+          <a href="/maurilio">Matchday</a>
+        </nav>
       </header>
 
       <section className="ledger-hero">
