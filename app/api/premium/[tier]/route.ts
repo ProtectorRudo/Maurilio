@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { accessTag } from "@/lib/server/access-recovery";
 import {
   databaseConfigured,
   getLatestPublishedMatchday,
@@ -108,6 +109,7 @@ export async function GET(
       lastObservedOdds: numberOrNull(pick.last_observed_odds),
       lastObservedAt: pick.last_observed_at,
       publishedAt: pick.published_at,
+      accessTag: accessTag(subjectId!),
     },
     {
       headers: {
