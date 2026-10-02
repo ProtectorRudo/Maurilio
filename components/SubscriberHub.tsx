@@ -34,6 +34,12 @@ function date(value: string | null | undefined) {
   return new Intl.DateTimeFormat("es-AR", { dateStyle: "medium" }).format(parsed);
 }
 
+function hasCurrentAccess(item: Subscription) {
+  if (item.status !== "active" || !item.current_period_end) return false;
+  const end = new Date(item.current_period_end).getTime();
+  return Number.isFinite(end) && end > Date.now();
+}
+
 export default function SubscriberHub() {
   const [items, setItems] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,7 +71,7 @@ export default function SubscriberHub() {
   if (items.length === 0) {
     return (
       <div className={styles.empty}>
-        <b>No tenés accesos activos todavía.</b>
+        <b>No tenés accesos todavía.</b>
         Elegí un tipster y comprá 30 días desde su perfil.
         <div className={styles.emptyAction}>
           <Link href="/">Explorar tipsters</Link>
@@ -79,26 +85,26 @@ export default function SubscriberHub() {
       {items.map((item) => {
         const name = item.tipster?.display_name ?? "Tipster";
         const slug = item.tipster?.slug;
+        const current = hasCurrentAccess(item);
+        const pending = item.status === "pending";
 
         return (
           <article className={styles.item} key={item.id}>
             <div>
               <span
                 className={`${styles.badge} ${
-                  item.status === "active"
+                  current
                     ? styles.active
                     : item.status === "cancelled"
                       ? styles.cancelled
                       : ""
                 }`}
               >
-                {item.status === "active"
+                {current
                   ? "Activo"
-                  : item.status === "cancelled"
-                    ? "Finalizado"
-                    : item.status === "pending"
-                      ? "Pago pendiente"
-                      : item.status}
+                  : pending
+                    ? "Pago pendiente"
+                    : "Vencido"}
               </span>
 
               <h3>
@@ -113,8 +119,12 @@ export default function SubscriberHub() {
               </p>
             </div>
 
-            {item.status === "active" ? (
+            {current ? (
               <span className={styles.manualRenewal}>Sin débito automático</span>
+            ) : slug && !pending ? (
+              <Link className={styles.secondary} href={`/tipsters/${slug}`}>
+                Renovar
+              </Link>
             ) : null}
           </article>
         );
