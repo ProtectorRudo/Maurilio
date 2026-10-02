@@ -14,7 +14,7 @@ export default function MarketplaceHeader() {
         <Link href="/estudio">Estudio</Link>
         <Link href="/suscripciones">Suscripciones</Link>
         <Link href="/para-tipsters">Para tipsters</Link>
-        <Link href="/ingresar" className={styles.login}>Cuenta</Link>
+        <Link href="/cuenta" className={styles.login}>Cuenta</Link>
       </nav>
     </header>
   );
