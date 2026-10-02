@@ -99,12 +99,13 @@ Keep `MAURILIO_SPLIT_PAYMENTS_ENABLED=0` until all are true:
 13. duplicate webhooks do not extend access twice;
 14. rejected payments do not unlock access;
 15. refunded/charged-back payments revoke the related access;
-16. an already-open checkout can still be reconciled if the seller disconnects after it was created;
-17. expired access renews at the current seller price and current platform fee;
-18. the private feed blocks expired users;
-19. Bet365 publishing and automatic settlement continue to pass;
-20. admin can verify/suspend tipsters;
-21. sponsored placement remains clearly labelled.
+16. an already-open checkout can still be reconciled if the seller disconnects inside Maurilio after it was created;
+17. an official Mercado Pago `mp-connect / application.deauthorized` notification disables new seller sales automatically;
+18. expired access renews at the current seller price and current platform fee;
+19. the private feed blocks expired users;
+20. Bet365 publishing and automatic settlement continue to pass;
+21. admin can verify/suspend tipsters;
+22. sponsored placement remains clearly labelled.
 
 Only then set:
 
