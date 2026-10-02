@@ -553,6 +553,20 @@ Deno.serve(async (request) => {
       return reply({ error: "legacy_subscription_requires_migration" }, 409);
     }
 
+    if (
+      subscription &&
+      subscription.status === "active" &&
+      subscription.current_period_end
+    ) {
+      const accessUntil = new Date(subscription.current_period_end).getTime();
+      if (Number.isFinite(accessUntil) && accessUntil > Date.now()) {
+        return reply({
+          error: "subscription_already_active",
+          accessUntil: subscription.current_period_end,
+        }, 409);
+      }
+    }
+
     if (!subscription) {
       const inserted = await db<Array<{
         id: string;
