@@ -225,6 +225,55 @@ function lineTimestamp(line: Record<string, unknown>) {
   return null;
 }
 
+function settleableRule(line: Record<string, unknown>) {
+  const betType = String(line.bet_type ?? "").trim().toLowerCase();
+  const marketKey = String(line.market_key ?? "").trim().toLowerCase();
+  const periodRaw = line.period_str ?? line.period;
+  const period =
+    periodRaw === null || periodRaw === undefined
+      ? ""
+      : String(periodRaw).trim().toLowerCase();
+
+  if (
+    period &&
+    !period.includes("full") &&
+    !period.includes("match") &&
+    !period.includes("game")
+  ) {
+    return null;
+  }
+
+  const family =
+    betType === "moneyline" || marketKey === "moneyline" || marketKey === "moneyline 3w"
+      ? "moneyline"
+      : betType === "handicap" || marketKey === "handicap" || marketKey === "spread"
+        ? "handicap"
+        : betType === "total" || marketKey === "total" || marketKey === "over_under"
+          ? "total"
+          : null;
+
+  if (!family) return null;
+
+  const side = String(line.side ?? "").trim().toLowerCase();
+
+  if (family === "moneyline") {
+    return ["home", "away", "draw"].includes(side) ? family : null;
+  }
+
+  const threshold = Number(line.line);
+  if (!Number.isFinite(threshold)) return null;
+
+  if (family === "handicap") {
+    return ["home", "away"].includes(side) ? family : null;
+  }
+
+  if (family === "total") {
+    return ["over", "under"].includes(side) ? family : null;
+  }
+
+  return null;
+}
+
 Deno.serve(async (request) => {
   if (request.method !== "POST") {
     return reply({ error: "method_not_allowed" }, 405);
@@ -299,6 +348,11 @@ Deno.serve(async (request) => {
       return reply({ error: "invalid_bet365_price" }, 409);
     }
 
+    const settlementRule = settleableRule(line);
+    if (!settlementRule) {
+      return reply({ error: "market_not_auto_settleable" }, 409);
+    }
+
     const sport = stringValue(detail, ["sport", "sport_name"], "Sport");
     const competition = stringValue(detail, ["league", "competition", "league_name"], "Competition");
     const home = stringValue(detail, ["home_team", "homeTeam", "home"], "Local");
@@ -334,6 +388,7 @@ Deno.serve(async (request) => {
           provider_selection_key: selectionKey,
           provider_market_key: market,
           provider_bookmaker_key: bookmaker,
+          settlement_rule: settlementRule,
           odds_captured_at: capturedAt,
           provider_price_updated_at: lineTimestamp(line),
           provider_capture: {
