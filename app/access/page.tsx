@@ -45,6 +45,7 @@ export default async function AccessLibraryPage() {
   const store = await cookies();
   const subjectId = store.get(ACCESS_COOKIE)?.value;
 
+  let activeEntitlementCount = 0;
   let reports: Array<{
     id: string;
     tier: "pro" | "elite";
@@ -57,9 +58,13 @@ export default async function AccessLibraryPage() {
   if (databaseConfigured() && validUuid(subjectId)) {
     try {
       const entitlements = await getActiveEntitlements(subjectId!);
+      activeEntitlementCount = entitlements.length;
       const uniqueSlugs = [...new Set(entitlements.map((item) => item.matchday_slug))];
       const matchdays = await Promise.all(
-        uniqueSlugs.map(async (slug) => [slug, await getMatchdayBySlug(slug)] as const),
+        uniqueSlugs.map(async (slug) => [
+          slug,
+          await getMatchdayBySlug(slug).catch(() => null),
+        ] as const),
       );
       const bySlug = new Map(matchdays);
 
@@ -141,7 +146,7 @@ export default async function AccessLibraryPage() {
         )}
       </section>
 
-      <AccessRecovery hasAccess={reports.length > 0} />
+      <AccessRecovery hasAccess={activeEntitlementCount > 0} />
     </main>
   );
 }
