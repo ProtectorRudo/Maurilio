@@ -44,6 +44,39 @@ export type TipsterHistoryRow = {
   content_hash: string | null;
 };
 
+
+export type PublicTipReceipt = {
+  tipster: {
+    id: string;
+    slug: string;
+    display_name: string;
+    status: string;
+    is_verified: boolean;
+  };
+  tip: {
+    public_id: string;
+    sport: string;
+    competition: string;
+    event: string;
+    market: string;
+    selection: string | null;
+    bookmaker: string;
+    entry_odds: number | null;
+    closing_odds: number | null;
+    stake_units: number | null;
+    event_start_at: string;
+    published_at: string;
+    settled_at: string | null;
+    result: "win" | "loss" | "push" | "void" | null;
+    profit_units: number | null;
+    clv_pct: number | null;
+    content_hash: string | null;
+    odds_captured_at: string | null;
+    provider_price_updated_at: string | null;
+    settlement_verified_at: string | null;
+  };
+};
+
 type RawTipster = Omit<
   PublicTipster,
   | "monthly_price_ars"
@@ -288,4 +321,84 @@ export async function getTipsterProfile(slug: string) {
   );
 
   return { tipster, history };
+}
+
+
+export async function getPublicTipReceipt(publicId: string) {
+  const clean = publicId.trim().toUpperCase();
+  if (!/^MT-\d{8}-[A-F0-9]{8}$/.test(clean)) return null;
+
+  const tipQuery = new URLSearchParams({
+    select:
+      "tipster_id,public_id,sport,competition,event,market,selection,bookmaker,entry_odds,closing_odds,stake_units,event_start_at,published_at,settled_at,result,profit_units,clv_pct,content_hash,odds_captured_at,provider_price_updated_at,settlement_verified_at",
+    public_id: "eq." + clean,
+    status: "eq.settled",
+    limit: "1",
+  });
+
+  const tips = await rest<Array<Record<string, unknown>>>(
+    "maurilio_tipster_tips",
+    tipQuery,
+  );
+  const row = tips[0];
+  if (!row || typeof row.tipster_id !== "string") return null;
+
+  const tipsterQuery = new URLSearchParams({
+    select: "id,slug,display_name,status,is_verified",
+    id: "eq." + row.tipster_id,
+    limit: "1",
+  });
+
+  const tipsters = await rest<Array<{
+    id: string;
+    slug: string;
+    display_name: string;
+    status: string;
+    is_verified: boolean;
+  }>>("maurilio_tipsters", tipsterQuery);
+
+  const tipster = tipsters[0];
+  if (!tipster) return null;
+
+  const receipt: PublicTipReceipt = {
+    tipster,
+    tip: {
+      public_id: String(row.public_id ?? ""),
+      sport: String(row.sport ?? ""),
+      competition: String(row.competition ?? ""),
+      event: String(row.event ?? ""),
+      market: String(row.market ?? ""),
+      selection: typeof row.selection === "string" ? row.selection : null,
+      bookmaker: String(row.bookmaker ?? ""),
+      entry_odds: numeric(row.entry_odds),
+      closing_odds: numeric(row.closing_odds),
+      stake_units: numeric(row.stake_units),
+      event_start_at: String(row.event_start_at ?? ""),
+      published_at: String(row.published_at ?? ""),
+      settled_at: typeof row.settled_at === "string" ? row.settled_at : null,
+      result:
+        row.result === "win" ||
+        row.result === "loss" ||
+        row.result === "push" ||
+        row.result === "void"
+          ? row.result
+          : null,
+      profit_units: numeric(row.profit_units),
+      clv_pct: numeric(row.clv_pct),
+      content_hash:
+        typeof row.content_hash === "string" ? row.content_hash : null,
+      odds_captured_at:
+        typeof row.odds_captured_at === "string" ? row.odds_captured_at : null,
+      provider_price_updated_at:
+        typeof row.provider_price_updated_at === "string"
+          ? row.provider_price_updated_at
+          : null,
+      settlement_verified_at:
+        typeof row.settlement_verified_at === "string"
+          ? row.settlement_verified_at
+          : null,
+    },
+  };
+
+  return receipt;
 }
