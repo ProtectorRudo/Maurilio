@@ -18,6 +18,8 @@ const eventLabels: Record<string, string> = {
   pick_published: "PICK PUBLISHED",
   sale_closed: "ENTRY CLOSED",
   pick_settled: "PICK SETTLED",
+  access_granted: "ACCESS GRANTED",
+  access_revoked: "ACCESS REVOKED",
 };
 
 function formatTime(value: string) {
@@ -72,6 +74,14 @@ function eventSummary(event: AuditEvent) {
             maximumFractionDigits: 0,
           }).format(pnl)}`
         : null,
+    ].filter(Boolean).join(" · ");
+  }
+
+  if (event.event_type === "access_granted" || event.event_type === "access_revoked") {
+    return [
+      typeof p.tier === "string" ? p.tier.toUpperCase() : null,
+      typeof p.matchday_slug === "string" ? p.matchday_slug : null,
+      typeof p.status === "string" ? p.status.toUpperCase() : null,
     ].filter(Boolean).join(" · ");
   }
 
