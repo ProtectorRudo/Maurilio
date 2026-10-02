@@ -90,6 +90,39 @@ function siteUrl() {
     .replace(/\/$/, "");
 }
 
+async function cancelPreapproval(providerId: string) {
+  const token = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN");
+  if (!token) throw new Error("mercadopago_not_configured");
+
+  const response = await fetch(
+    `https://api.mercadopago.com/preapproval/${encodeURIComponent(providerId)}`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ status: "cancelled" }),
+    },
+  );
+
+  const raw = await response.text();
+  let body: Record<string, unknown> = {};
+  try {
+    body = raw ? JSON.parse(raw) as Record<string, unknown> : {};
+  } catch {
+    body = {};
+  }
+
+  if (!response.ok) {
+    console.error("mercadopago_cancel_preapproval_failed", response.status, body);
+    throw new Error("mercadopago_cancel_preapproval_failed");
+  }
+
+  return body;
+}
+
 async function createPreapproval(input: {
   reason: string;
   reference: string;
@@ -159,6 +192,7 @@ Deno.serve(async (request) => {
     const body = await request.json() as {
       action?: unknown;
       tipsterSlug?: unknown;
+      subscriptionId?: unknown;
     };
     const action = typeof body.action === "string" ? body.action : "";
 
@@ -205,6 +239,72 @@ Deno.serve(async (request) => {
           ...row,
           tipster: byId.get(String(row.tipster_id)) ?? null,
         })),
+      });
+    }
+
+    if (action === "cancel") {
+      const subscriptionId =
+        typeof body.subscriptionId === "string"
+          ? body.subscriptionId.trim()
+          : "";
+
+      if (
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          subscriptionId,
+        )
+      ) {
+        return reply({ error: "invalid_subscription" }, 400);
+      }
+
+      const rows = await db<Array<{
+        id: string;
+        provider_subscription_id: string | null;
+        status: string;
+        current_period_end: string | null;
+      }>>(
+        `maurilio_tipster_subscriptions?select=id,provider_subscription_id,status,current_period_end&id=eq.${encodeURIComponent(subscriptionId)}&subscriber_user_id=eq.${encodeURIComponent(user.id)}&limit=1`,
+      );
+
+      const subscription = rows[0];
+      if (!subscription) {
+        return reply({ error: "subscription_not_found" }, 404);
+      }
+
+      if (subscription.status === "cancelled" || subscription.status === "expired") {
+        return reply({
+          ok: true,
+          status: subscription.status,
+          accessUntil: subscription.current_period_end,
+        });
+      }
+
+      if (!subscription.provider_subscription_id) {
+        await patchSubscription(subscription.id, {
+          status: "cancelled",
+          cancelled_at: new Date().toISOString(),
+        });
+
+        return reply({
+          ok: true,
+          status: "cancelled",
+          accessUntil: subscription.current_period_end,
+        });
+      }
+
+      const provider = await cancelPreapproval(
+        subscription.provider_subscription_id,
+      );
+
+      await patchSubscription(subscription.id, {
+        status: "cancelled",
+        cancelled_at: new Date().toISOString(),
+        provider_payload: provider,
+      });
+
+      return reply({
+        ok: true,
+        status: "cancelled",
+        accessUntil: subscription.current_period_end,
       });
     }
 
