@@ -50,3 +50,6 @@
 .paymentRequired{border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;background:#070a08}.paymentRequired b{display:block;font-size:11px}.paymentRequired span{display:block;margin-top:5px;color:#748178;font-size:10px;line-height:1.5}
 
 .paymentRequired a{display:inline-flex;margin-top:10px;border:1px solid rgba(105,243,154,.2);border-radius:9px;padding:8px 10px;color:#c9f6d7;font-size:9px;font-weight:800}
+
+.salesSwitch{margin:14px 0;border:1px solid var(--line);border-radius:16px;padding:16px;background:#080d0a;display:flex;align-items:center;justify-content:space-between;gap:16px}.salesSwitch h3{margin:4px 0 5px;font-size:16px}.salesSwitch p{margin:0;color:#77847c;font-size:10px;line-height:1.55}.salesSwitch>a,.salesSwitch>button{flex:0 0 auto}
+@media(max-width:700px){.salesSwitch{align-items:flex-start;flex-direction:column}.salesSwitch>a,.salesSwitch>button{width:100%;justify-content:center;text-align:center}}
