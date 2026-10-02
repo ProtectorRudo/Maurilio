@@ -46,6 +46,8 @@ const nextConfig: NextConfig = {
       { source: "/mis-tips/:path*", headers: privateHeaders },
       { source: "/suscripciones/:path*", headers: privateHeaders },
       { source: "/estudio/:path*", headers: privateHeaders },
+      { source: "/cuenta/:path*", headers: privateHeaders },
+      { source: "/panel-tipster/:path*", headers: privateHeaders },
       { source: "/control-room/:path*", headers: privateHeaders },
       { source: "/access/:path*", headers: privateHeaders },
     ];
