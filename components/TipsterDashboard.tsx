@@ -57,6 +57,10 @@ export default function TipsterDashboard() {
       }
 
       const dash = await dashboardResponse.json() as Dashboard;
+      if (!dashboardResponse.ok) {
+        setDashboard({ error: "profile_required" });
+        return;
+      }
       setDashboard(dash);
 
       if (dashboardResponse.ok) {
