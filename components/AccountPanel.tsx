@@ -42,28 +42,56 @@ export default function AccountPanel() {
   if (account.error) return <div className={styles.empty}><b>No pudimos cargar tu cuenta.</b></div>;
 
   return (
-    <div className={styles.accountCard}>
-      <h2>{account.displayName || account.tipster?.displayName || "Tu cuenta"}</h2>
-      <p>
-        Desde acá podés entrar a tu feed privado, administrar suscripciones o,
-        si sos tipster, gestionar el estudio y tus ingresos.
-      </p>
-
-      <div className={styles.accountMeta}>
-        <div><small>Rol</small><b>{account.role ?? "user"}</b></div>
-        <div><small>Perfil tipster</small><b>{account.tipster?.slug ? `@${account.tipster.slug}` : "No creado"}</b></div>
+    <div className={styles.accountSimple}>
+      <div className={styles.accountWelcome}>
+        <h2>{account.displayName || account.tipster?.displayName || "Tu cuenta"}</h2>
+        <p>Elegí qué querés hacer.</p>
       </div>
 
-      <div className={styles.actions}>
-        <Link href="/mis-tips">Mis tips</Link>
-        <Link href="/suscripciones">Suscripciones</Link>
-        {account.tipster ? <Link href="/panel-tipster">Panel tipster</Link> : <Link href="/para-tipsters">Crear perfil tipster</Link>}
-        {account.tipster ? <Link href="/estudio">Publicar tip</Link> : null}
-        {account.role === "admin" ? <Link href="/admin">Administración</Link> : null}
-        <button className={styles.secondary} type="button" onClick={() => void logout()}>
-          Cerrar sesión
-        </button>
+      <div className={styles.accountActionsGrid}>
+        <Link href="/mis-tips">
+          <b>Mis tips</b>
+          <span>Ver tips de tus suscripciones</span>
+        </Link>
+
+        <Link href="/suscripciones">
+          <b>Mis suscripciones</b>
+          <span>Ver y administrar accesos</span>
+        </Link>
+
+        {account.tipster ? (
+          <>
+            <Link href="/estudio">
+              <b>Publicar tip</b>
+              <span>Abrir el Estudio</span>
+            </Link>
+            <Link href="/panel-tipster">
+              <b>Mi panel tipster</b>
+              <span>Ingresos, cobros y perfil</span>
+            </Link>
+          </>
+        ) : (
+          <Link href="/para-tipsters">
+            <b>Ser tipster</b>
+            <span>Crear tu perfil público</span>
+          </Link>
+        )}
+
+        {account.role === "admin" ? (
+          <Link href="/admin">
+            <b>Administración</b>
+            <span>Moderación y pagos</span>
+          </Link>
+        ) : null}
       </div>
+
+      <button
+        className={styles.logoutSimple}
+        type="button"
+        onClick={() => void logout()}
+      >
+        Cerrar sesión
+      </button>
     </div>
   );
 }
