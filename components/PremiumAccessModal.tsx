@@ -157,7 +157,11 @@ export default function PremiumAccessModal({
           ? "El evento ya comenzó. La venta de este informe quedó cerrada automáticamente."
           : err instanceof Error && err.message === "sale_closed"
             ? "La venta fue cerrada por gestión de riesgo. No se realizó ningún cargo."
-            : "No pudimos iniciar el pago. No se realizó ningún cargo.",
+            : err instanceof Error && err.message === "already_unlocked"
+              ? "Este informe ya está desbloqueado en tu acceso. Abrilo desde Mis informes."
+              : err instanceof Error && err.message === "checkout_initializing"
+                ? "Ya hay una orden de pago iniciándose para este informe. Reintentá en unos segundos; no se creó una segunda orden."
+                : "No pudimos iniciar el pago. No se realizó ningún cargo.",
       );
       setStarting(false);
     }
