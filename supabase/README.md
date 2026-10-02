@@ -20,6 +20,8 @@ Current Maurilio migration versions:
 13. `20261002000829_audit_maurilio_publication_events.sql`
 14. `20261002001148_add_maurilio_admin_login_throttle.sql`
 15. `20261002002232_audit_maurilio_entitlement_events.sql`
+16. `20261002002655_harden_maurilio_settlement_timing.sql`
+17. `20261002002732_add_maurilio_checkout_idempotency.sql`
 
 The final migration contains the canonical publication RPC and immutability
 triggers. Earlier publication migrations are retained to match applied migration
@@ -44,7 +46,11 @@ covers the critical lifecycle:
 - distributed admin login lockout after repeated failures;
 - entitlement grant/revoke audit events;
 - historical entitlement persistence through Matchday settlement;
-- revocation immediately disabling historical access.
+- revocation immediately disabling historical access;
+- WIN/LOSS/PUSH settlement rejected before event start;
+- VOID allowed before event start;
+- one active checkout reservation per subject + Matchday + tier;
+- repeated checkout requests reuse the same reservation instead of creating duplicate orders.
 
 Run it only against a test/disposable environment or an explicitly authorized SQL
 session.
@@ -64,6 +70,7 @@ Sensitive RPCs are also service-role only:
 - `maurilio_risk_snapshot()`
 - `maurilio_close_pick_sale(text,text,numeric)`
 - `maurilio_admin_login_gate(text,text)`
+- `maurilio_reserve_order(text,uuid,text,text,numeric)`
 
 Operational publication, sale-stop and settlement events are written to
 `maurilio_audit_events`. The audit log is append-only at the database layer.
