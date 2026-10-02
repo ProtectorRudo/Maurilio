@@ -14,9 +14,9 @@ export default function TerminosPage() {
         </p>
 
         <div className={styles.notice}>
-          <strong>Suscripciones.</strong> El precio y la periodicidad se muestran
-          antes del checkout. La renovación puede cancelarse; el acceso ya abonado
-          continúa hasta el final del período vigente cuando corresponda.
+          <strong>Acceso de pago.</strong> Cada compra habilita 30 días de acceso
+          al contenido futuro del tipster. La renovación es manual mientras la
+          integración de marketplace no soporte una recurrencia documentada.
         </div>
 
         <div className={styles.notice}>
@@ -33,9 +33,10 @@ export default function TerminosPage() {
         </div>
 
         <div className={styles.notice}>
-          <strong>Pagos y comisiones.</strong> Las suscripciones se procesan mediante
-          proveedores externos. Maurilio puede retener una comisión de plataforma
-          informada al tipster y conservar un registro de bruto, comisión y neto.
+          <strong>Pagos y comisiones.</strong> El tipster conecta su propia cuenta
+          de Mercado Pago. El pago se procesa como operación marketplace y los
+          fondos del vendedor no son custodiados por Maurilio. Mercado Pago acredita
+          al vendedor y separa la comisión de plataforma correspondiente a Maurilio.
         </div>
 
         <div className={styles.notice}>
