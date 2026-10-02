@@ -137,7 +137,7 @@ begin
   end;
 end $$;
 
-do $
+do $$
 begin
   begin
     perform public.maurilio_publish_bundle(
@@ -160,9 +160,9 @@ begin
       sqlerrm
     );
   end;
-end $;
+end $$;
 
-do $
+do $$
 begin
   begin
     perform public.maurilio_close_pick_sale(
@@ -180,7 +180,7 @@ begin
       sqlerrm
     );
   end;
-end $;
+end $$;
 
 select public.maurilio_close_pick_sale(
   'CI-INVARIANT-FREE',
@@ -202,7 +202,7 @@ select
 from public.maurilio_picks
 where public_id='CI-INVARIANT-FREE';
 
-do $
+do $$
 begin
   begin
     perform public.maurilio_close_pick_sale(
@@ -220,7 +220,7 @@ begin
       sqlerrm
     );
   end;
-end $;
+end $$;
 
 select public.maurilio_settle_pick('CI-INVARIANT-FREE','win',1.90);
 
