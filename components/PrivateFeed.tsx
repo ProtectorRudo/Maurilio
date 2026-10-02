@@ -25,8 +25,9 @@ function dateTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Horario no disponible";
   return new Intl.DateTimeFormat("es-AR", {
-    dateStyle: "short",
-    timeStyle: "short",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(date);
 }
 
@@ -52,14 +53,14 @@ export default function PrivateFeed() {
   }, []);
 
   if (loading) {
-    return <div className={styles.empty}><b>Cargando tips privados…</b></div>;
+    return <div className={styles.empty}><b>Cargando tus tips…</b></div>;
   }
 
   if (tips.length === 0) {
     return (
       <div className={styles.empty}>
-        <b>No hay tips futuros desbloqueados.</b>
-        Cuando un tipster al que seguís publique uno nuevo, va a aparecer acá.
+        <b>No tenés tips nuevos.</b>
+        Cuando un tipster al que estés suscripto publique, va a aparecer acá.
       </div>
     );
   }
@@ -72,21 +73,23 @@ export default function PrivateFeed() {
           <article className={styles.tip} key={tip.public_id}>
             <div>
               <div className={styles.tipMeta}>
-                <span className={styles.pill}>{tip.tipster?.display_name ?? "Tipster"}</span>
-                <span className={styles.pill}>{tip.sport}</span>
-                <span className={styles.pill}>{tip.competition}</span>
-                <span className={styles.pill}>Bet365 verificado</span>
+                <span className={styles.pill}>
+                  {tip.tipster?.display_name ?? "Tipster"}
+                </span>
+                <span className={styles.pill}>{dateTime(tip.event_start_at)}</span>
               </div>
+
               <h3>{tip.event}</h3>
               <p>
-                {tip.market}{tip.selection ? ` · ${tip.selection}` : ""}
-                {" · "}{dateTime(tip.event_start_at)}
-                {Number.isFinite(Number(tip.stake_units)) ? ` · ${Number(tip.stake_units).toFixed(2)}u` : ""}
+                {tip.market}
+                {tip.selection ? ` · ${tip.selection}` : ""}
               </p>
             </div>
+
             <div className={styles.odds}>
-              <small>Cuota capturada</small>
+              <small>Cuota</small>
               <b>{Number.isFinite(odds) ? odds.toFixed(2) : "—"}</b>
+              <span>Bet365</span>
             </div>
           </article>
         );
