@@ -78,6 +78,7 @@ function platformFeeBps() {
 
 function paymentsConfigured() {
   return Boolean(
+    Deno.env.get("MAURILIO_SUBSCRIPTIONS_ENABLED") === "1" &&
     Deno.env.get("MERCADOPAGO_ACCESS_TOKEN") &&
     Deno.env.get("MERCADOPAGO_WEBHOOK_SECRET") &&
     platformFeeBps(),
@@ -259,7 +260,7 @@ Deno.serve(async (request) => {
       provider_payload: Record<string, unknown>;
       status: string;
     }>>(
-      `maurilio_tipster_subscriptions?select=id,provider_subscription_id,provider_payload,status&subscriber_user_id=eq.${encodeURIComponent(user.id)}&tipster_id=eq.${encodeURIComponent(tipster.id)}&status=in.(pending,active,past_due)&order=created_at.desc&limit=1`,
+      `maurilio_tipster_subscriptions?select=id,provider_subscription_id,provider_payload,status&subscriber_user_id=eq.${encodeURIComponent(user.id)}&tipster_id=eq.${encodeURIComponent(tipster.id)}&status=in.(pending,active,past_due,paused)&order=created_at.desc&limit=1`,
     );
 
     if (existing[0]) {
