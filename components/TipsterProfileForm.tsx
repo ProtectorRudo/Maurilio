@@ -83,8 +83,10 @@ export default function TipsterProfileForm() {
           kind: "error",
           text:
             body.error === "valid_subscription_price_required"
-              ? "Para aceptar suscriptores necesitás definir un precio mensual mayor a cero."
-              : "No pudimos guardar el perfil. Revisá el slug, el nombre y el precio.",
+              ? "Para aceptar suscriptores necesitás definir un precio mayor a cero."
+              : body.error === "payment_account_required"
+                ? "Conectá Mercado Pago desde tu panel antes de aceptar suscriptores."
+                : "No pudimos guardar el perfil. Revisá el slug, el nombre y el precio.",
         });
         return;
       }
@@ -184,7 +186,7 @@ export default function TipsterProfileForm() {
       </div>
 
       <div className={styles.field}>
-        <label htmlFor="tipster-price">Precio por mes</label>
+        <label htmlFor="tipster-price">Precio por 30 días</label>
         <input
           id="tipster-price"
           name="monthlyPriceArs"
