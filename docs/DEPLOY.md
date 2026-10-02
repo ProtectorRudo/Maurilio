@@ -42,7 +42,6 @@ SUPABASE_URL=https://<project>.supabase.co
 SUPABASE_SECRET_KEY=<server-only-secret>
 SUPABASE_ANON_KEY=<publishable/legacy-compatible-key>
 
-MAURILIO_PLATFORM_FEE_BPS=<configured-platform-fee>
 MAURILIO_SPLIT_PAYMENTS_ENABLED=0
 MAURILIO_TOKEN_ENCRYPTION_KEY=<strong-random-server-secret>
 MAURILIO_PROMOTIONS_ENABLED=0
@@ -53,7 +52,7 @@ MERCADOPAGO_WEBHOOK_SECRET=
 ODDS_API_KEY=
 ```
 
-Preview can run with Split payments disabled.
+Preview can run with Split payments disabled. The commission is not an environment variable; it is configured from Maurilio Admin and audited in Supabase.
 
 The Mercado Pago OAuth / Split secrets are consumed by Supabase Edge Functions. Configure the same production values in Supabase Edge Function secrets before enabling real payments.
 
