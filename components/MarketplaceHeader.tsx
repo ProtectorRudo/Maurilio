@@ -10,9 +10,10 @@ export default function MarketplaceHeader() {
       </Link>
       <nav className={styles.nav} aria-label="Navegación principal">
         <Link href="/">Explorar</Link>
-        <Link href="/como-funciona">Cómo funciona</Link>
+        <Link href="/mis-tips">Mis tips</Link>
+        <Link href="/suscripciones">Suscripciones</Link>
         <Link href="/para-tipsters">Para tipsters</Link>
-        <Link href="/ingresar" className={styles.login}>Ingresar</Link>
+        <Link href="/ingresar" className={styles.login}>Cuenta</Link>
       </nav>
     </header>
   );
