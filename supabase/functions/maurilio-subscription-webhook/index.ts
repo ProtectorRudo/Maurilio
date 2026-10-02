@@ -354,6 +354,43 @@ async function patchEvent(id: string, patch: Record<string, unknown>) {
   );
 }
 
+async function deactivateSellerAccount(collectorId: string) {
+  const accounts = await db<Array<{ tipster_id: string }>>(
+    `maurilio_tipster_payment_accounts?select=tipster_id&provider_user_id=eq.${encodeURIComponent(collectorId)}&revoked_at=is.null&limit=1`,
+  );
+  const account = accounts[0];
+
+  if (!account) return false;
+
+  const now = new Date().toISOString();
+
+  await db(
+    `maurilio_tipster_payment_accounts?provider_user_id=eq.${encodeURIComponent(collectorId)}&revoked_at=is.null`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        revoked_at: now,
+        updated_at: now,
+      }),
+    },
+    "return=minimal",
+  );
+
+  await db(
+    `maurilio_tipsters?id=eq.${encodeURIComponent(account.tipster_id)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        accepting_subscribers: false,
+        updated_at: now,
+      }),
+    },
+    "return=minimal",
+  );
+
+  return true;
+}
+
 async function patchSubscription(id: string, patch: Record<string, unknown>) {
   await db(
     `maurilio_tipster_subscriptions?id=eq.${encodeURIComponent(id)}`,
@@ -458,6 +495,32 @@ Deno.serve(async (request) => {
         date_created: body.date_created ?? null,
       },
     });
+
+    const action = typeof body.action === "string" ? body.action : "";
+
+    if (
+      type === "mp-connect" &&
+      action === "application.deauthorized" &&
+      collectorId
+    ) {
+      const deactivated = await deactivateSellerAccount(collectorId);
+
+      await patchEvent(eventId, {
+        status: deactivated ? "processed" : "ignored",
+        processed_at: new Date().toISOString(),
+        ...(deactivated ? {} : { error_message: "seller_account_not_found" }),
+      });
+
+      return reply({ ok: true });
+    }
+
+    if (type === "mp-connect") {
+      await patchEvent(eventId, {
+        status: "ignored",
+        processed_at: new Date().toISOString(),
+      });
+      return reply({ ok: true });
+    }
 
     if (!objectId || type !== "payment" || !collectorId) {
       await patchEvent(eventId, {
