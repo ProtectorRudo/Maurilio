@@ -8,6 +8,8 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/maurilio",
         disallow: [
           "/maurilio/ingresar",
+          "/maurilio/recuperar",
+          "/maurilio/actualizar-clave",
           "/maurilio/cuenta",
           "/maurilio/mis-tips",
           "/maurilio/suscripciones",
