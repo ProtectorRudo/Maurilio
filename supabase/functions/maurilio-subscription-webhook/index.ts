@@ -194,11 +194,12 @@ type PaymentAccount = {
   access_token_ciphertext: string;
   refresh_token_ciphertext: string;
   token_expires_at: string | null;
+  revoked_at: string | null;
 };
 
 async function paymentAccountForCollector(collectorId: string) {
   const rows = await db<PaymentAccount[]>(
-    `maurilio_tipster_payment_accounts?select=tipster_id,provider_user_id,access_token_ciphertext,refresh_token_ciphertext,token_expires_at&provider_user_id=eq.${encodeURIComponent(collectorId)}&revoked_at=is.null&limit=1`,
+    `maurilio_tipster_payment_accounts?select=tipster_id,provider_user_id,access_token_ciphertext,refresh_token_ciphertext,token_expires_at,revoked_at&provider_user_id=eq.${encodeURIComponent(collectorId)}&order=revoked_at.asc.nullsfirst&limit=1`,
   );
   return rows[0] ?? null;
 }
@@ -470,7 +471,7 @@ Deno.serve(async (request) => {
     if (!account) {
       await patchEvent(eventId, {
         status: "ignored",
-        error_message: "collector_not_connected",
+        error_message: "collector_account_not_found",
         processed_at: new Date().toISOString(),
       });
       return reply({ ok: true });
