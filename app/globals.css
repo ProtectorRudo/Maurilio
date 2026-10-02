@@ -239,3 +239,13 @@ linear-gradient(180deg,#07100c,#050807 42%);padding-bottom:90px}
 .preview-event-time{border:1px solid var(--line);border-radius:8px;padding:11px;margin-top:8px}
 .preview-event-time small{display:block;color:#5d6961;font:7px monospace;letter-spacing:.08em;margin-bottom:5px}
 .preview-event-time p{margin:0;color:#9ba69f;font:9px monospace}
+
+/* --- Immutable audit timeline --- */
+.audit-panel{display:grid;gap:14px;margin-top:26px;border:1px solid var(--line);background:rgba(7,11,8,.82);border-radius:14px;padding:18px}
+.audit-list{display:grid;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#070b08}
+.audit-event{position:relative;display:grid;grid-template-columns:18px 1fr;gap:10px;padding:13px 14px;border-bottom:1px solid var(--line)}
+.audit-event:last-child{border-bottom:0}.audit-dot{width:8px;height:8px;border-radius:50%;background:var(--green);margin-top:5px;box-shadow:0 0 16px rgba(105,243,154,.25)}
+.audit-event-main{display:grid;gap:4px}.audit-event-head{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.audit-event-head b{color:#a9f2bf;font:8px monospace;letter-spacing:.09em}.audit-event-head time{color:#58645d;font:7px monospace}
+.audit-event-main>strong{font:10px monospace;color:#d7ded9}.audit-event-main>p{margin:0;color:#7d8981;font-size:9px;line-height:1.5}
+@media(max-width:620px){.audit-event-head{align-items:flex-start;flex-direction:column;gap:4px}}
