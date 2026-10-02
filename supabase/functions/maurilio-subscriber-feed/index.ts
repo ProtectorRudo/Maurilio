@@ -79,13 +79,7 @@ Deno.serve(async (request) => {
 
     const activeTipsterIds = subscriptions
       .filter((subscription) => {
-        if (subscription.status === "cancelled") {
-          if (!subscription.current_period_end) return false;
-          const end = new Date(subscription.current_period_end).getTime();
-          return Number.isFinite(end) && end > Date.now();
-        }
-
-        if (!subscription.current_period_end) return true;
+        if (!subscription.current_period_end) return false;
         const end = new Date(subscription.current_period_end).getTime();
         return Number.isFinite(end) && end > Date.now();
       })
