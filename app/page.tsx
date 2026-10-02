@@ -1,132 +1,148 @@
-import Matchday from "@/components/Matchday";
-import NoValueMatchday from "@/components/NoValueMatchday";
-import WaitingMatchday from "@/components/WaitingMatchday";
-import { currentMatchday } from "@/lib/demo-data";
-import type { Matchday as MatchdayData, Pick } from "@/lib/types";
-import {
-  databaseConfigured,
-  getLatestPublishedMatchday,
-  getPublishedPickByTier,
-  type MaurilioPickRow,
-} from "@/lib/server/supabase-rest";
+import MarketplaceHeader from "@/components/MarketplaceHeader";
+import TipsterCard from "@/components/TipsterCard";
+import styles from "@/components/marketplace.module.css";
+import { getMarketplace } from "@/lib/server/tipster-marketplace";
 
 export const dynamic = "force-dynamic";
 
-function numeric(value: number | string | null) {
-  if (value === null) return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
+type SearchParams = Promise<{
+  q?: string;
+  sport?: string;
+  sort?: string;
+}>;
 
-function pctText(value: number | null, digits = 2) {
-  if (value === null) return "—";
-  return `${(value * 100).toFixed(digits)}%`;
-}
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const params = await searchParams;
+  const q = typeof params.q === "string" ? params.q : "";
+  const sport = typeof params.sport === "string" ? params.sport : "";
+  const sort = typeof params.sort === "string" ? params.sort : "history";
 
-function mapFreePick(row: MaurilioPickRow): Pick | null {
-  const odds = numeric(row.entry_odds);
-  const minimum = numeric(row.minimum_odds);
-  const own = numeric(row.probability_own);
-  const low = numeric(row.probability_low);
-  const high = numeric(row.probability_high);
-  const stake = numeric(row.stake_pct);
-
-  if (odds === null || own === null || odds <= 1 || own <= 0 || own >= 1) {
-    return null;
-  }
-
-  const implied = 1 / odds;
-  const edge = own - implied;
-  const ev = own * odds - 1;
-
-  return {
-    id: row.public_id,
-    tier: "free",
-    competition: row.competition,
-    event: row.event,
-    market: row.selection ? `${row.market} · ${row.selection}` : row.market,
-    price: odds.toFixed(2),
-    minimum: minimum?.toFixed(2) ?? "—",
-    implied: Number((implied * 100).toFixed(1)),
-    model: Number((own * 100).toFixed(1)),
-    range:
-      low !== null && high !== null
-        ? `${(low * 100).toFixed(0)}–${(high * 100).toFixed(0)}%`
-        : "—",
-    edge: Number((edge * 100).toFixed(1)),
-    ev: Number((ev * 100).toFixed(1)),
-    stake: pctText(stake),
-    thesis: row.thesis ?? "Tesis pendiente.",
-    risk: row.principal_risk ?? "Riesgo principal pendiente.",
-    bookmaker: "Bet365",
-    capturedAt: row.odds_captured_at ?? "NO VERIFICADO",
-    eventStartAt: row.event_start_at ?? "NO VERIFICADO",
+  let marketplace: Awaited<ReturnType<typeof getMarketplace>> = {
+    sponsored: [],
+    results: [],
+    sports: [],
+    total: 0,
   };
-}
-
-async function persistedMatchday(): Promise<
-  | { kind: "matchday"; data: MatchdayData }
-  | { kind: "no_value"; label: string }
-  | { kind: "idle" }
-  | null
-> {
-  if (!databaseConfigured()) return null;
+  let unavailable = false;
 
   try {
-    const active = await getLatestPublishedMatchday();
-    if (!active) return { kind: "idle" };
-
-    if (active.no_value) {
-      return { kind: "no_value", label: active.label };
-    }
-
-    const freeRow = await getPublishedPickByTier(active.slug, "free");
-    if (!freeRow) return { kind: "idle" };
-
-    const freePick = mapFreePick(freeRow);
-    if (!freePick) return { kind: "idle" };
-
-    return {
-      kind: "matchday",
-      data: {
-        label: active.label,
-        slug: active.slug,
-        date: active.match_date,
-        picks: [freePick],
-        archivePreview: [
-          {
-            id: `#${freePick.id}`,
-            edge: `${freePick.edge >= 0 ? "+" : ""}${freePick.edge}%`,
-            clv: "OPEN",
-            status: "PUBLISHED",
-          },
-          { id: "#PRO", edge: "—", clv: "—", status: "SEALED" },
-          { id: "#ELITE", edge: "—", clv: "—", status: "SEALED" },
-        ],
-      },
-    };
+    marketplace = await getMarketplace({ q, sport, sort });
   } catch (error) {
-    console.error("Unable to load active Maurilio Matchday", {
+    unavailable = true;
+    console.error("Unable to load Maurilio marketplace", {
       error: error instanceof Error ? error.message : "unknown",
     });
-    return null;
-  }
-}
-
-export default async function Home() {
-  const persisted = await persistedMatchday();
-
-  if (persisted?.kind === "no_value") {
-    return <NoValueMatchday label={persisted.label} />;
   }
 
-  if (persisted?.kind === "matchday") {
-    return <Matchday matchday={persisted.data} isDemo={false} />;
-  }
+  return (
+    <main className={styles.shell}>
+      <MarketplaceHeader />
 
-  if (persisted?.kind === "idle") {
-    return <WaitingMatchday />;
-  }
+      <section className={styles.hero}>
+        <div>
+          <span className={styles.eyebrow}>Marketplace de tipsters verificables</span>
+          <h1>Seguí personas por datos. No por promesas.</h1>
+          <p>
+            Cada resultado público sale del historial registrado dentro de Maurilio.
+            Los tips futuros permanecen bloqueados hasta que te suscribís, y la cuota
+            de entrada se captura desde Bet365.
+          </p>
+        </div>
 
-  return <Matchday matchday={currentMatchday} isDemo />;
+        <aside className={styles.heroPanel}>
+          <span className={styles.eyebrow}>La regla de Maurilio</span>
+          <div className={styles.proofRow}>
+            <div className={styles.proof}>
+              <b>100%</b>
+              <span>Historial pasado visible</span>
+            </div>
+            <div className={styles.proof}>
+              <b>Bet365</b>
+              <span>Cuota de entrada registrada</span>
+            </div>
+            <div className={styles.proof}>
+              <b>Inmutable</b>
+              <span>El tip publicado no se reescribe</span>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section className={styles.searchWrap} aria-label="Buscar tipsters">
+        <form className={styles.search} method="get">
+          <input
+            type="search"
+            name="q"
+            defaultValue={q}
+            placeholder="Buscar por tipster, deporte o especialidad"
+            aria-label="Buscar tipsters"
+          />
+
+          <select name="sport" defaultValue={sport} aria-label="Filtrar por deporte">
+            <option value="">Todos los deportes</option>
+            {marketplace.sports.map((item) => (
+              <option key={item} value={item}>{item}</option>
+            ))}
+          </select>
+
+          <select name="sort" defaultValue={sort} aria-label="Ordenar tipsters">
+            <option value="history">Más historial</option>
+            <option value="roi">ROI 90 días</option>
+            <option value="clv">CLV 90 días</option>
+          </select>
+
+          <button type="submit">Buscar</button>
+        </form>
+      </section>
+
+      <section className={styles.main}>
+        {marketplace.sponsored.length > 0 ? (
+          <>
+            <div className={styles.sectionTop}>
+              <div>
+                <span className={styles.eyebrow}>Publicidad interna</span>
+                <h2>Destacados</h2>
+              </div>
+              <p>Posiciones pagadas. El rendimiento nunca se altera por publicidad.</p>
+            </div>
+            <div className={styles.grid}>
+              {marketplace.sponsored.map((tipster) => (
+                <TipsterCard key={tipster.id} tipster={tipster} />
+              ))}
+            </div>
+          </>
+        ) : null}
+
+        <div className={styles.sectionTop}>
+          <div>
+            <span className={styles.eyebrow}>Explorar</span>
+            <h2>Tipsters</h2>
+          </div>
+          <p>{marketplace.total} resultado{marketplace.total === 1 ? "" : "s"}</p>
+        </div>
+
+        {unavailable ? (
+          <div className={styles.empty}>
+            <b>El marketplace no está disponible ahora.</b>
+            La información pública no pudo cargarse. No mostramos datos inventados.
+          </div>
+        ) : marketplace.results.length > 0 ? (
+          <div className={styles.grid}>
+            {marketplace.results.map((tipster) => (
+              <TipsterCard key={tipster.id} tipster={tipster} />
+            ))}
+          </div>
+        ) : (
+          <div className={styles.empty}>
+            <b>No encontramos tipsters con esos filtros.</b>
+            Probá otra búsqueda o quitá alguno de los filtros.
+          </div>
+        )}
+      </section>
+    </main>
+  );
 }
