@@ -432,6 +432,7 @@ declare
   v_subject uuid := '00000000-0000-4000-8000-000000000123'::uuid;
   v_order_id uuid;
   v_entitlement_id uuid;
+  v_recovery jsonb;
 begin
   insert into public.maurilio_orders(
     external_reference, subject_id, matchday_slug, tier, amount_ars, status, paid_at
@@ -465,6 +466,82 @@ begin
       where id=v_entitlement_id and status='active'
     ),
     'active entitlement remains after Matchday settlement';
+
+  perform public.maurilio_issue_recovery_code(
+    v_subject,
+    repeat('b', 64)
+  );
+
+  insert into maurilio_invariant_results
+  select
+    'recovery_hash_only',
+    exists(
+      select 1
+      from public.maurilio_access_recovery_codes
+      where subject_id=v_subject
+        and token_hash=repeat('b',64)
+        and expires_at > now()
+    ),
+    'only the digest is persisted with a future expiry';
+
+  insert into maurilio_invariant_results
+  select
+    'recovery_issue_audited',
+    exists(
+      select 1
+      from public.maurilio_audit_events
+      where event_type='recovery_code_issued'
+        and entity_id=v_subject::text
+    ),
+    'recovery_code_issued audit event exists';
+
+  v_recovery := public.maurilio_consume_recovery_code(
+    repeat('b', 64)
+  );
+
+  insert into maurilio_invariant_results
+  values (
+    'recovery_single_use_success',
+    v_recovery->>'subject_id'=v_subject::text
+      and (v_recovery->>'active_entitlements')::int = 1,
+    v_recovery::text
+  );
+
+  insert into maurilio_invariant_results
+  select
+    'recovery_consumed_deleted',
+    not exists(
+      select 1
+      from public.maurilio_access_recovery_codes
+      where subject_id=v_subject
+    ),
+    'consumed recovery code row is deleted';
+
+  insert into maurilio_invariant_results
+  select
+    'recovery_access_audited',
+    exists(
+      select 1
+      from public.maurilio_audit_events
+      where event_type='access_recovered'
+        and entity_id=v_subject::text
+    ),
+    'access_recovered audit event exists';
+
+  begin
+    perform public.maurilio_consume_recovery_code(
+      repeat('b', 64)
+    );
+    insert into maurilio_invariant_results
+    values ('recovery_second_use_rejected', false, 'unexpected second consume');
+  exception when others then
+    insert into maurilio_invariant_results
+    values (
+      'recovery_second_use_rejected',
+      sqlerrm='invalid_recovery_code',
+      sqlerrm
+    );
+  end;
 
   update public.maurilio_entitlements
   set status='revoked', revoked_at=now()
