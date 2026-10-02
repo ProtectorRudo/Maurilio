@@ -32,9 +32,10 @@ function numberOrNull(value: number | string | null | undefined) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function pct(value: number | null, digits = 1) {
+function pct(value: number | null, digits = 1, signed = false) {
   if (value === null) return "—";
-  return `${value >= 0 ? "+" : ""}${(value * 100).toFixed(digits)}%`;
+  const prefix = signed && value >= 0 ? "+" : "";
+  return `${prefix}${(value * 100).toFixed(digits)}%`;
 }
 
 function odds(value: number | null) {
@@ -154,9 +155,9 @@ export default async function HistoricalReportPage({
           <article><small>CUOTA MÍNIMA</small><b>{odds(minimum)}</b></article>
           <article><small>IMPLÍCITA</small><b>{pct(implied)}</b></article>
           <article><small>PROB. PROPIA</small><b>{pct(own)}</b></article>
-          <article><small>EDGE</small><b>{pct(edge)}</b></article>
-          <article><small>EV</small><b>{pct(ev)}</b></article>
-          <article><small>EV PISO</small><b>{pct(lowerEv)}</b></article>
+          <article><small>EDGE</small><b>{pct(edge, 1, true)}</b></article>
+          <article><small>EV</small><b>{pct(ev, 1, true)}</b></article>
+          <article><small>EV PISO</small><b>{pct(lowerEv, 1, true)}</b></article>
           <article><small>STAKE</small><b>{pct(stake)}</b></article>
         </section>
 
