@@ -13,6 +13,10 @@ Production access is available at:
 The panel requires a valid signed admin session created from the server-only
 `MAURILIO_ADMIN_SECRET`. Sessions expire automatically.
 
+Login protection is distributed through Supabase. Five failed attempts inside
+15 minutes trigger a 30-minute lockout. Raw IP addresses are not persisted;
+the server sends only an HMAC-derived throttle key to the database.
+
 ## 2. Check bankroll and risk budget
 
 The Control Room reads a canonical server-side risk snapshot:
@@ -186,7 +190,19 @@ CLV is calculated from Bet365 entry vs Bet365 closing price.
 - If webhook verification fails, entitlement is not granted.
 - If admin authentication is unavailable in production, Control Room is not exposed.
 
-## 10. End-of-day audit
+## 10. Immutable audit timeline
+
+The Control Room exposes the append-only operational log for:
+
+- Matchday publication;
+- pick publication;
+- premium sale risk stop;
+- pick settlement.
+
+The underlying audit rows cannot be updated or deleted. This is separate from the
+public ledger and exists to prove the operational sequence.
+
+## 11. End-of-day audit
 
 Before closing a Matchday:
 
