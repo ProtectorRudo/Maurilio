@@ -1,6 +1,8 @@
 # Maurilio — Vercel Deployment
 
-Deployment is intentionally manual and guarded.
+Maurilio deploys independently and is later exposed through `viralio.net/maurilio`.
+
+## Deployment workflow
 
 The repository contains:
 
@@ -8,11 +10,18 @@ The repository contains:
 .github/workflows/deploy.yml
 ```
 
-It runs only through GitHub Actions → **Deploy Maurilio** → **Run workflow**.
+Two safe paths exist:
+
+- manual `workflow_dispatch` with `target=preview` or `target=production`;
+- pushes to the dedicated `preview` branch, which can deploy **preview only**.
+
+Production requires the explicit confirmation:
+
+```
+DEPLOY_PRODUCTION
+```
 
 ## Required GitHub secrets
-
-Configure these repository secrets before the workflow can deploy:
 
 ```
 VERCEL_TOKEN
@@ -20,135 +29,70 @@ VERCEL_ORG_ID
 VERCEL_PROJECT_ID
 ```
 
-No Vercel credential belongs in source control.
+The deployment gate fails before checkout/build/deploy when any are missing.
 
-The workflow uses a pinned Vercel CLI version (`59.19.1`). At the time the
-workflow was created, npm reported the Vercel CLI 59.x line as current.
+## Preview environment
 
-## Required Vercel runtime variables
-
-Configure these inside the Maurilio Vercel project for Preview and/or Production
-as appropriate:
+At minimum configure:
 
 ```env
-NEXT_PUBLIC_SITE_URL=https://viralio.net/maurilio
+NEXT_PUBLIC_SITE_URL=<preview-or-approved-site-url>
 
-MAURILIO_ADMIN_PREVIEW=0
-MAURILIO_ADMIN_SECRET=<server-only-secret>
-
-SUPABASE_URL=https://bwsgxpttnrctklrcjmjs.supabase.co
+SUPABASE_URL=https://<project>.supabase.co
 SUPABASE_SECRET_KEY=<server-only-secret>
+SUPABASE_ANON_KEY=<publishable/legacy-compatible-key>
 
-MAURILIO_CHECKOUT_ENABLED=0
-MAURILIO_PRO_PRICE_ARS=
-MAURILIO_ELITE_PRICE_ARS=
+MAURILIO_PLATFORM_FEE_BPS=<configured-platform-fee>
+MAURILIO_SUBSCRIPTIONS_ENABLED=0
+MAURILIO_PROMOTIONS_ENABLED=0
 
 MERCADOPAGO_ACCESS_TOKEN=
 MERCADOPAGO_WEBHOOK_SECRET=
+ODDS_API_KEY=
 ```
 
-Keep `MAURILIO_CHECKOUT_ENABLED=0` during deployment and smoke testing.
+Preview can run with payments disabled.
 
-## Preview
+## Workflow sequence
 
-Choose:
-
-```
-target = preview
-```
-
-The workflow:
-
-1. verifies GitHub Vercel secrets exist;
-2. pulls Preview configuration;
-3. runs `vercel build`;
-4. deploys the exact prebuilt artifact;
-5. requests `/maurilio/api/health`;
-6. fails if the health endpoint is not healthy.
+1. validate Vercel secrets;
+2. checkout repository;
+3. install pinned Vercel CLI;
+4. pull Vercel environment;
+5. build the prebuilt artifact;
+6. deploy preview/production according to the gate;
+7. request `/maurilio/api/health`;
+8. fail the workflow if health fails.
 
 ## Production
 
-Choose:
+Manual workflow input:
 
 ```
 target = production
 production_confirmation = DEPLOY_PRODUCTION
 ```
 
-The explicit confirmation prevents accidental production deployment.
-
-Production uses:
-
-```
-vercel build --prod
-vercel deploy --prebuilt --prod
-```
-
-The workflow then checks:
-
-```
-<deployment-origin>/maurilio/api/health
-```
-
-A deployment is not considered healthy unless the database is reachable.
+Production is never triggered by the `preview` branch.
 
 ## Viralio integration
 
-After a Maurilio deployment is verified, set this in the **Viralio** production
-project:
+After the standalone Maurilio deployment is verified, set on the Viralio project:
 
 ```env
 MAURILIO_ORIGIN=https://<verified-maurilio-deployment-origin>
 ```
 
-Use only the bare HTTPS origin, without `/maurilio` and without a trailing slash.
+Use a bare HTTPS origin. Viralio's rewrite must preserve Maurilio's `/maurilio` base path.
 
-Viralio already contains fail-closed rewrites:
+If the origin is missing or invalid, Viralio should fail closed and keep the rest of `viralio.net` unaffected.
 
-```
-/maurilio
-/maurilio/:path*
-```
+## Current blocker
 
-They preserve Maurilio's `basePath: /maurilio`.
+The deploy workflow was tested and correctly stopped at its credential gate because these repository secrets are not configured yet:
 
-If `MAURILIO_ORIGIN` is absent or invalid, Viralio does not proxy Maurilio.
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
 
-## Mercado Pago webhook
-
-Only after the public Viralio path is verified, configure the Mercado Pago Order
-webhook target:
-
-```
-https://viralio.net/maurilio/api/webhooks/mercadopago
-```
-
-Test with non-production payment credentials first.
-
-## Checkout activation
-
-Do not turn checkout on until all are true:
-
-- public route works through Viralio;
-- `/maurilio/api/health` is healthy;
-- Control Room login works;
-- a NO VALUE Matchday works;
-- a test pick can be published and settled;
-- premium endpoints reject users without entitlement;
-- Mercado Pago webhook signature validation works;
-- accredited test payment grants entitlement;
-- refund/cancel revokes entitlement;
-- PRO and ELITE prices are final.
-
-Only then set:
-
-```env
-MAURILIO_CHECKOUT_ENABLED=1
-```
-
-## Current infrastructure limitation
-
-The currently connected Vercel integration exposed no teams/projects during
-setup, so no live deployment was created from this workspace. The GitHub workflow
-exists so deployment can proceed without code changes once the three Vercel
-GitHub secrets are configured.
+No production deployment was attempted.
