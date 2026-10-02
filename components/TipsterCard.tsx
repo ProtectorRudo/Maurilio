@@ -67,7 +67,7 @@ export default function TipsterCard({ tipster }: { tipster: PublicTipster }) {
 
       <div className={styles.cardFoot}>
         <div className={styles.price}>
-          <span>Por mes</span>
+          <span>30 días</span>
           <b>{money(tipster.monthly_price_ars)}</b>
         </div>
         <Link className={styles.view} href={`/tipsters/${tipster.slug}`}>
