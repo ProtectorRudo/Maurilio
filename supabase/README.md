@@ -19,6 +19,7 @@ Current Maurilio migration versions:
 12. `20261002000812_add_maurilio_append_only_audit.sql`
 13. `20261002000829_audit_maurilio_publication_events.sql`
 14. `20261002001148_add_maurilio_admin_login_throttle.sql`
+15. `20261002002232_audit_maurilio_entitlement_events.sql`
 
 The final migration contains the canonical publication RPC and immutability
 triggers. Earlier publication migrations are retained to match applied migration
@@ -40,7 +41,10 @@ covers the critical lifecycle:
 - publication/sale-stop/settlement audit events;
 - append-only audit enforcement;
 - irreversible risk stop at database level;
-- distributed admin login lockout after repeated failures.
+- distributed admin login lockout after repeated failures;
+- entitlement grant/revoke audit events;
+- historical entitlement persistence through Matchday settlement;
+- revocation immediately disabling historical access.
 
 Run it only against a test/disposable environment or an explicitly authorized SQL
 session.
