@@ -16,6 +16,8 @@ Current Maurilio migration versions:
 9. `20261001232514_enforce_maurilio_robust_lower_bound.sql`
 10. `20261001233143_add_maurilio_event_start_gate.sql`
 11. `20261001233859_add_maurilio_sale_risk_stop.sql`
+12. `20261002000812_add_maurilio_append_only_audit.sql`
+13. `20261002000829_audit_maurilio_publication_events.sql`
 
 The final migration contains the canonical publication RPC and immutability
 triggers. Earlier publication migrations are retained to match applied migration
@@ -52,5 +54,8 @@ Sensitive RPCs are also service-role only:
 - `maurilio_settle_pick(text,text,numeric)`
 - `maurilio_risk_snapshot()`
 - `maurilio_close_pick_sale(text,text,numeric)`
+
+Operational publication, sale-stop and settlement events are written to
+`maurilio_audit_events`. The audit log is append-only at the database layer.
 
 No service-role key may be exposed to the browser.
