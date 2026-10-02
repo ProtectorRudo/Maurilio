@@ -105,8 +105,8 @@ export default async function AccessLibraryPage() {
             <span>NO VERIFIED REPORTS</span>
             <h2>No hay informes premium disponibles en este acceso.</h2>
             <p>
-              Si una compra fue acreditada en otro navegador o dispositivo, este
-              acceso no la comparte automáticamente.
+              Si la compra fue acreditada en otro navegador o dispositivo,
+              ingresá abajo el Recovery Code generado desde ese acceso.
             </p>
             <a className="primary-button" href="/maurilio">Volver al Matchday</a>
           </div>
