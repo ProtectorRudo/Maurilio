@@ -38,11 +38,15 @@ export default function SubscribeButton({
 
       if (!response.ok || !body.checkoutUrl) {
         const copy =
-          body.error === "subscription_already_exists"
-            ? "Ya existe una suscripción para este tipster."
-            : body.error === "subscriptions_disabled"
-              ? "Las suscripciones todavía no están habilitadas."
-              : "No pudimos iniciar la suscripción.";
+          body.error === "subscription_already_active"
+            ? "Ya tenés acceso vigente a este tipster."
+            : body.error === "tipster_payment_account_required"
+              ? "Este tipster todavía no habilitó sus cobros."
+              : body.error === "seller_payment_account_reconnect_required"
+                ? "El tipster necesita reconectar Mercado Pago."
+                : body.error === "subscriptions_disabled"
+                  ? "Los pagos todavía no están habilitados."
+                  : "No pudimos abrir el pago.";
         setError(copy);
         return;
       }
@@ -63,7 +67,7 @@ export default function SubscribeButton({
   return (
     <>
       <button className={styles.cta} type="button" disabled={busy} onClick={subscribe}>
-        {busy ? "Abriendo checkout…" : "Suscribirme"}
+        {busy ? "Abriendo checkout…" : "Comprar 30 días"}
       </button>
       {error ? (
         <p style={{ color: "#ff9d8c", fontSize: 11, lineHeight: 1.5 }}>{error}</p>
