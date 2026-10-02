@@ -15,9 +15,12 @@ on:
         description: "For production only, type DEPLOY_PRODUCTION"
         required: false
         type: string
+  push:
+    branches:
+      - preview
 
 concurrency:
-  group: maurilio-deploy-${{ inputs.target }}
+  group: maurilio-deploy-${{ github.event_name == 'push' && 'preview' || inputs.target }}
   cancel-in-progress: false
 
 jobs:
@@ -26,6 +29,7 @@ jobs:
     permissions:
       contents: read
     env:
+      DEPLOY_TARGET: ${{ github.event_name == 'push' && 'preview' || inputs.target }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -48,7 +52,7 @@ jobs:
             exit 1
           fi
 
-          if [ "${{ inputs.target }}" = "production" ] && [ "${{ inputs.production_confirmation }}" != "DEPLOY_PRODUCTION" ]; then
+          if [ "$DEPLOY_TARGET" = "production" ] && [ "${{ inputs.production_confirmation }}" != "DEPLOY_PRODUCTION" ]; then
             echo "::error::Production deploy requires production_confirmation=DEPLOY_PRODUCTION"
             exit 1
           fi
@@ -66,7 +70,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${{ inputs.target }}" = "production" ]; then
+          if [ "$DEPLOY_TARGET" = "production" ]; then
             vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
           else
             vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
@@ -76,7 +80,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${{ inputs.target }}" = "production" ]; then
+          if [ "$DEPLOY_TARGET" = "production" ]; then
             vercel build --prod --token="$VERCEL_TOKEN"
           else
             vercel build --token="$VERCEL_TOKEN"
@@ -87,7 +91,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${{ inputs.target }}" = "production" ]; then
+          if [ "$DEPLOY_TARGET" = "production" ]; then
             url="$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")"
           else
             url="$(vercel deploy --prebuilt --token="$VERCEL_TOKEN")"
@@ -111,7 +115,7 @@ jobs:
           {
             echo "## Maurilio deploy"
             echo ""
-            echo "- Target: ${{ inputs.target }}"
+            echo "- Target: $DEPLOY_TARGET"
             echo "- Commit: ${GITHUB_SHA}"
             echo "- URL: ${DEPLOYMENT_URL}"
             echo "- Health: passed"
