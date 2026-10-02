@@ -149,6 +149,11 @@ Browser return URLs never unlock premium content.
 
 Refund/cancel/failure revokes access.
 
+Verified buyers also have a `/maurilio/access` library. The entitlement is tied
+to the exact Matchday and tier purchased, so a settled historical report remains
+reviewable without granting access to any later Matchday. A revoked entitlement
+immediately loses historical access as well.
+
 ## 7. Settlement
 
 In Control Room → Post-Match, enter:
