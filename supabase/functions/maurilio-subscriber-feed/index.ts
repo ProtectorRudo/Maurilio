@@ -74,11 +74,17 @@ Deno.serve(async (request) => {
       status: string;
       current_period_end: string | null;
     }>>(
-      `maurilio_tipster_subscriptions?select=tipster_id,status,current_period_end&subscriber_user_id=eq.${encodeURIComponent(userId)}&status=eq.active&limit=200`,
+      `maurilio_tipster_subscriptions?select=tipster_id,status,current_period_end&subscriber_user_id=eq.${encodeURIComponent(userId)}&status=in.(active,cancelled)&limit=200`,
     );
 
     const activeTipsterIds = subscriptions
       .filter((subscription) => {
+        if (subscription.status === "cancelled") {
+          if (!subscription.current_period_end) return false;
+          const end = new Date(subscription.current_period_end).getTime();
+          return Number.isFinite(end) && end > Date.now();
+        }
+
         if (!subscription.current_period_end) return true;
         const end = new Date(subscription.current_period_end).getTime();
         return Number.isFinite(end) && end > Date.now();
