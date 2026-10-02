@@ -22,6 +22,7 @@ export default function TipsterProfileForm() {
   const [account, setAccount] = useState<Account | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [paymentConnected, setPaymentConnected] = useState(false);
   const [message, setMessage] = useState<{ kind: "error" | "success"; text: string } | null>(null);
 
   useEffect(() => {
@@ -34,6 +35,17 @@ export default function TipsterProfileForm() {
         }
         const body = await response.json() as Account;
         setAccount(body);
+
+        if (body.tipster) {
+          const paymentResponse = await fetch(
+            "/maurilio/api/tipster/payment-account",
+            { cache: "no-store" },
+          );
+          if (paymentResponse.ok) {
+            const payment = await paymentResponse.json() as { connected?: boolean };
+            setPaymentConnected(Boolean(payment.connected));
+          }
+        }
       } catch {
         setAccount({ error: "unavailable" });
       } finally {
@@ -97,7 +109,21 @@ export default function TipsterProfileForm() {
       });
 
       const refreshed = await fetch("/maurilio/api/account", { cache: "no-store" });
-      if (refreshed.ok) setAccount(await refreshed.json() as Account);
+      if (refreshed.ok) {
+        const nextAccount = await refreshed.json() as Account;
+        setAccount(nextAccount);
+
+        if (nextAccount.tipster) {
+          const paymentResponse = await fetch(
+            "/maurilio/api/tipster/payment-account",
+            { cache: "no-store" },
+          );
+          if (paymentResponse.ok) {
+            const payment = await paymentResponse.json() as { connected?: boolean };
+            setPaymentConnected(Boolean(payment.connected));
+          }
+        }
+      }
     } catch {
       setMessage({ kind: "error", text: "No pudimos guardar el perfil." });
     } finally {
@@ -198,16 +224,29 @@ export default function TipsterProfileForm() {
         />
       </div>
 
-      <label className={styles.check}>
-        <input
-          type="checkbox"
-          name="acceptingSubscribers"
-          defaultChecked={Boolean(tipster?.acceptingSubscribers)}
-        />
-        <span>
-          Aceptar nuevas suscripciones. Podés apagarlo cuando quieras sin perder tu historial.
-        </span>
-      </label>
+      {tipster ? (
+        paymentConnected ? (
+          <label className={styles.check}>
+            <input
+              type="checkbox"
+              name="acceptingSubscribers"
+              defaultChecked={Boolean(tipster.acceptingSubscribers)}
+            />
+            <span>
+              Aceptar nuevos pagos de 30 días.
+            </span>
+          </label>
+        ) : (
+          <div className={styles.paymentRequired}>
+            <b>Para cobrar, conectá Mercado Pago.</b>
+            <span>
+              Guardá tu perfil y hacelo desde Mi panel tipster.
+            </span>
+          </div>
+        )
+      ) : (
+        <input type="hidden" name="acceptingSubscribers" value="" />
+      )}
 
       {message ? (
         <div className={`${styles.message} ${message.kind === "error" ? styles.error : styles.success}`}>
