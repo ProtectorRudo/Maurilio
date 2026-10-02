@@ -279,7 +279,9 @@ export default async function TipsterProfilePage({
                   <span>
                     <strong>{row.event}</strong>
                     <br />
-                    <span className={styles.hash}>#{row.public_id}</span>
+                    <Link className={styles.hash} href={`/tips/${row.public_id}`}>
+                      #{row.public_id}
+                    </Link>
                   </span>
                   <span>
                     {row.market}
