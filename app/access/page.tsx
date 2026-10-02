@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import AccessRecovery from "@/components/AccessRecovery";
 import {
   databaseConfigured,
   getActiveEntitlements,
@@ -139,6 +140,8 @@ export default async function AccessLibraryPage() {
           })
         )}
       </section>
+
+      <AccessRecovery hasAccess={reports.length > 0} />
     </main>
   );
 }
