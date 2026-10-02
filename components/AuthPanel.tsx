@@ -6,10 +6,29 @@ import styles from "./account.module.css";
 
 type Mode = "login" | "signup";
 
-export default function AuthPanel({ nextPath }: { nextPath: string }) {
+export default function AuthPanel({
+  nextPath,
+  newAccount = false,
+  resetDone = false,
+}: {
+  nextPath: string;
+  newAccount?: boolean;
+  resetDone?: boolean;
+}) {
   const [mode, setMode] = useState<Mode>("login");
+  const [postSignup, setPostSignup] = useState(newAccount);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<{ kind: "error" | "success"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    kind: "error" | "success";
+    text: string;
+  } | null>(
+    resetDone
+      ? {
+          kind: "success",
+          text: "Contraseña actualizada. Ya podés ingresar con la nueva clave.",
+        }
+      : null,
+  );
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -25,14 +44,19 @@ export default function AuthPanel({ nextPath }: { nextPath: string }) {
 
     try {
       const response = await fetch(
-        mode === "login" ? "/maurilio/api/auth/login" : "/maurilio/api/auth/signup",
+        mode === "login"
+          ? "/maurilio/api/auth/login"
+          : "/maurilio/api/auth/signup",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         },
       );
-      const body = await response.json() as { error?: string; confirmationRequired?: boolean };
+      const body = await response.json() as {
+        error?: string;
+        confirmationRequired?: boolean;
+      };
 
       if (!response.ok) {
         setMessage({
@@ -45,18 +69,33 @@ export default function AuthPanel({ nextPath }: { nextPath: string }) {
         return;
       }
 
+      if (mode === "signup") {
+        setPostSignup(true);
+      }
+
       if (body.confirmationRequired) {
         setMessage({
           kind: "success",
-          text: "Cuenta creada. Revisá tu email para confirmar el acceso y después ingresá.",
+          text:
+            "Cuenta creada. Confirmá tu email y después ingresá para terminar la configuración.",
         });
         setMode("login");
         return;
       }
 
-      window.location.assign(`/maurilio${nextPath === "/" ? "" : nextPath}`);
+      const destination =
+        mode === "signup" || postSignup
+          ? "/onboarding"
+          : nextPath;
+
+      window.location.assign(
+        "/maurilio" + (destination === "/" ? "" : destination),
+      );
     } catch {
-      setMessage({ kind: "error", text: "El acceso no está disponible en este momento." });
+      setMessage({
+        kind: "error",
+        text: "El acceso no está disponible en este momento.",
+      });
     } finally {
       setBusy(false);
     }
@@ -66,16 +105,22 @@ export default function AuthPanel({ nextPath }: { nextPath: string }) {
     <div className={styles.panel}>
       <div className={styles.tabs}>
         <button
-          className={`${styles.tab} ${mode === "login" ? styles.tabActive : ""}`}
+          className={styles.tab + " " + (mode === "login" ? styles.tabActive : "")}
           type="button"
-          onClick={() => { setMode("login"); setMessage(null); }}
+          onClick={() => {
+            setMode("login");
+            setMessage(null);
+          }}
         >
           Ingresar
         </button>
         <button
-          className={`${styles.tab} ${mode === "signup" ? styles.tabActive : ""}`}
+          className={styles.tab + " " + (mode === "signup" ? styles.tabActive : "")}
           type="button"
-          onClick={() => { setMode("signup"); setMessage(null); }}
+          onClick={() => {
+            setMode("signup");
+            setMessage(null);
+          }}
         >
           Crear cuenta
         </button>
@@ -85,13 +130,24 @@ export default function AuthPanel({ nextPath }: { nextPath: string }) {
         {mode === "signup" ? (
           <div className={styles.field}>
             <label htmlFor="displayName">Nombre</label>
-            <input id="displayName" name="displayName" maxLength={60} autoComplete="name" />
+            <input
+              id="displayName"
+              name="displayName"
+              maxLength={60}
+              autoComplete="name"
+            />
           </div>
         ) : null}
 
         <div className={styles.field}>
           <label htmlFor="email">Email</label>
-          <input id="email" name="email" type="email" required autoComplete="email" />
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+          />
         </div>
 
         <div className={styles.field}>
@@ -117,13 +173,23 @@ export default function AuthPanel({ nextPath }: { nextPath: string }) {
         ) : null}
 
         {message ? (
-          <div className={`${styles.message} ${message.kind === "error" ? styles.error : styles.success}`}>
+          <div
+            className={
+              styles.message +
+              " " +
+              (message.kind === "error" ? styles.error : styles.success)
+            }
+          >
             {message.text}
           </div>
         ) : null}
 
         <button className={styles.primary} disabled={busy} type="submit">
-          {busy ? "Procesando…" : mode === "login" ? "Ingresar" : "Crear cuenta"}
+          {busy
+            ? "Procesando…"
+            : mode === "login"
+              ? "Ingresar"
+              : "Crear cuenta"}
         </button>
       </form>
     </div>
