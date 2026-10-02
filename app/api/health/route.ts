@@ -3,31 +3,39 @@ import {
   databaseConfigured,
   databaseReachable,
 } from "@/lib/server/supabase-rest";
-import {
-  mercadoPagoConfigured,
-  mercadoPagoWebhookConfigured,
-} from "@/lib/server/mercadopago";
+
+export const dynamic = "force-dynamic";
+
+function authConfigured() {
+  return Boolean(
+    (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL) &&
+    (
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+      process.env.SUPABASE_ANON_KEY ||
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      process.env.SUPABASE_SECRET_KEY
+    ),
+  );
+}
 
 export async function GET() {
   const database = await databaseReachable();
-  const checkoutFlag = process.env.MAURILIO_CHECKOUT_ENABLED === "1";
-  const paymentCredentials =
-    mercadoPagoConfigured() && mercadoPagoWebhookConfigured();
+  const auth = authConfigured();
 
   const body = {
-    status: database ? "ok" : "degraded",
+    status: database && auth ? "ok" : "degraded",
+    product: "tipster_marketplace",
     database: {
       configured: databaseConfigured(),
       reachable: database,
     },
-    payments: {
-      configured: paymentCredentials,
-      enabled: checkoutFlag && database && paymentCredentials,
+    auth: {
+      configured: auth,
     },
   };
 
   return NextResponse.json(body, {
-    status: database ? 200 : 503,
+    status: database && auth ? 200 : 503,
     headers: {
       "Cache-Control": "no-store, max-age=0",
     },
