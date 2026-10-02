@@ -10,6 +10,9 @@ type Dashboard = {
   approvedCharges?: number | string;
   grossArs?: number | string;
   platformFeeArs?: number | string;
+  paymentConnected?: boolean;
+  acceptingSubscribers?: boolean;
+  monthlyPriceArs?: number | string | null;
   activePromotionEndsAt?: string | null;
   error?: string;
 };
@@ -41,6 +44,7 @@ export default function TipsterDashboard() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [promotion, setPromotion] = useState<PromotionStatus | null>(null);
   const [busyDays, setBusyDays] = useState<number | null>(null);
+  const [salesBusy, setSalesBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   async function loadDashboard() {
@@ -72,6 +76,41 @@ export default function TipsterDashboard() {
   useEffect(() => {
     void loadDashboard().catch(() => setDashboard({ error: "unavailable" }));
   }, []);
+
+  async function toggleSales() {
+    if (!dashboard) return;
+
+    setSalesBusy(true);
+    setMessage(null);
+
+    try {
+      const next = !Boolean(dashboard.acceptingSubscribers);
+      const response = await fetch("/maurilio/api/tipster/sales", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accepting: next }),
+      });
+      const body = await response.json() as { error?: string };
+
+      if (!response.ok) {
+        setMessage(
+          body.error === "payment_account_required"
+            ? "Conectá Mercado Pago antes de habilitar ventas."
+            : body.error === "valid_subscription_price_required"
+              ? "Definí un precio mayor a cero antes de habilitar ventas."
+              : "No pudimos actualizar las ventas.",
+        );
+        return;
+      }
+
+      await loadDashboard();
+      setMessage(next ? "Ventas habilitadas." : "Ventas pausadas.");
+    } catch {
+      setMessage("No pudimos actualizar las ventas.");
+    } finally {
+      setSalesBusy(false);
+    }
+  }
 
   async function buyPromotion(days: number) {
     setBusyDays(days);
@@ -123,6 +162,41 @@ export default function TipsterDashboard() {
       </div>
 
       <PaymentAccountCard />
+
+      <section className={styles.salesSwitch}>
+        <div>
+          <span className={styles.paymentEyebrow}>Ventas</span>
+          <h3>
+            {dashboard.acceptingSubscribers ? "Perfil disponible" : "Ventas pausadas"}
+          </h3>
+          <p>
+            {dashboard.paymentConnected
+              ? dashboard.acceptingSubscribers
+                ? "Los usuarios pueden comprar 30 días de acceso."
+                : "Habilitá las ventas cuando quieras empezar a cobrar."
+              : "Primero conectá Mercado Pago para recibir los cobros directamente."}
+          </p>
+        </div>
+
+        {dashboard.paymentConnected && Number(dashboard.monthlyPriceArs) > 0 ? (
+          <button
+            className={dashboard.acceptingSubscribers ? styles.secondary : styles.primary}
+            type="button"
+            disabled={salesBusy}
+            onClick={() => void toggleSales()}
+          >
+            {salesBusy
+              ? "Guardando…"
+              : dashboard.acceptingSubscribers
+                ? "Pausar ventas"
+                : "Habilitar ventas"}
+          </button>
+        ) : !dashboard.paymentConnected ? null : (
+          <Link className={styles.secondary} href="/para-tipsters">
+            Definir precio
+          </Link>
+        )}
+      </section>
 
       <div className={styles.simpleDashGrid}>
         <div>
