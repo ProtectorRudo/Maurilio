@@ -10,10 +10,9 @@ export default function PanelTipsterPage() {
       <section className={styles.hub}>
         <div className={styles.hubTop}>
           <div>
-            <span className={market.eyebrow}>Tipster</span>
-            <h1>Panel de ingresos</h1>
+            <span className={market.eyebrow}>Mi perfil tipster</span>
+            <h1>Panel</h1>
           </div>
-          <p>Suscripciones, comisión, saldo y promoción interna.</p>
         </div>
         <TipsterDashboard />
       </section>
