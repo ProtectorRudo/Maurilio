@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Maurilio — Quant Football";
+export const alt = "Maurilio — Tipsters verificables";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -38,27 +38,55 @@ export default function Image() {
             M
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontSize: 24, fontWeight: 800, letterSpacing: 5 }}>MAURILIO</span>
-            <span style={{ fontSize: 12, color: "#748077", letterSpacing: 4 }}>QUANT FOOTBALL</span>
+            <span style={{ fontSize: 24, fontWeight: 800, letterSpacing: 5 }}>
+              MAURILIO
+            </span>
+            <span style={{ fontSize: 12, color: "#748077", letterSpacing: 4 }}>
+              TIPSTERS VERIFICABLES
+            </span>
           </div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", maxWidth: 950 }}>
-          <span style={{ color: "#69f39a", fontSize: 18, letterSpacing: 4, marginBottom: 22 }}>
-            VALUE OVER NOISE
+          <span
+            style={{
+              color: "#69f39a",
+              fontSize: 18,
+              letterSpacing: 4,
+              marginBottom: 22,
+            }}
+          >
+            HISTORIAL &gt; PROMESAS
           </span>
-          <div style={{ display: "flex", flexDirection: "column", fontSize: 68, lineHeight: 1.02, fontWeight: 800, letterSpacing: -4 }}>
-            El mercado pone el precio.
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              fontSize: 68,
+              lineHeight: 1.02,
+              fontWeight: 800,
+              letterSpacing: -4,
+            }}
+          >
+            Seguí personas por datos.
             <br />
-            <span style={{ color: "#7f8e85" }}>Nosotros auditamos la probabilidad.</span>
+            <span style={{ color: "#7f8e85" }}>No por capturas.</span>
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 34, color: "#7d8982", fontSize: 16, letterSpacing: 2 }}>
-          <span>EDGE</span>
-          <span>EV</span>
-          <span>CUOTA MÍNIMA</span>
+        <div
+          style={{
+            display: "flex",
+            gap: 34,
+            color: "#7d8982",
+            fontSize: 16,
+            letterSpacing: 2,
+          }}
+        >
+          <span>BET365</span>
+          <span>ROI</span>
           <span>CLV</span>
+          <span>HISTORIAL INMUTABLE</span>
         </div>
       </div>
     ),
