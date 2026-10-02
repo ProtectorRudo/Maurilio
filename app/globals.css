@@ -315,3 +315,15 @@ linear-gradient(180deg,#07100c,#050807 42%);padding-bottom:90px}
 .recovery-form{display:grid;gap:11px}.recovery-form label{display:grid;gap:6px;font:8px monospace;color:#7a867e;letter-spacing:.05em}.recovery-form input{width:100%;border:1px solid var(--line);border-radius:8px;background:#080d0a;color:#dce3de;padding:11px;font:10px monospace;outline:none}
 .recovery-form input:focus{border-color:rgba(105,243,154,.35)}
 @media(max-width:760px){.recovery-grid{grid-template-columns:1fr}.recovery-head{flex-direction:column}.recovery-panel{margin-left:24px;margin-right:24px}}
+
+/* --- Pseudonymous premium access watermark --- */
+.premium-report{position:relative;isolation:isolate;overflow:hidden}
+.premium-report>:not(.premium-watermark){position:relative;z-index:1}
+.premium-watermark{position:absolute;inset:48px -28px auto -28px;z-index:0;display:grid;grid-template-columns:repeat(2,1fr);gap:48px 24px;transform:rotate(-16deg);pointer-events:none;user-select:none;opacity:.035}
+.premium-watermark span{font:11px monospace;letter-spacing:.12em;white-space:nowrap}
+.historical-report{position:relative;isolation:isolate;overflow:hidden}
+.historical-report>:not(.historical-watermark){position:relative;z-index:1}
+.historical-watermark{position:absolute;inset:120px -50px auto -50px;z-index:0;display:grid;grid-template-columns:repeat(2,1fr);gap:90px 50px;transform:rotate(-18deg);pointer-events:none;user-select:none;opacity:.035}
+.historical-watermark span{font:14px monospace;letter-spacing:.14em;white-space:nowrap}
+.immutable-badge small{font:7px monospace;color:#66726a;letter-spacing:.08em}
+@media(max-width:700px){.premium-watermark,.historical-watermark{grid-template-columns:1fr;gap:72px;opacity:.028}}
