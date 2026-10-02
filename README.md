@@ -30,6 +30,7 @@ Implementado:
 - Home premium y Matchday
 - FREE reveal interactivo
 - PRO / ELITE protegidos por entitlement
+- Biblioteca “Mis informes” con acceso histórico exacto por Matchday/tier
 - Checkout Mercado Pago fail-closed
 - Webhook firmado + verificación independiente de order
 - Supabase con RLS y acceso server-only
