@@ -245,6 +245,10 @@ async function createProviderOrder(input: {
 
 async function statusView() {
   let availability = { pro: false, elite: false };
+  let saleEndsAt: { pro: string | null; elite: string | null } = {
+    pro: null,
+    elite: null,
+  };
   const active = await latestMatchday().catch(() => null);
 
   if (active && !active.no_value) {
@@ -252,9 +256,14 @@ async function statusView() {
       tierPick(active.id, "pro").catch(() => null),
       tierPick(active.id, "elite").catch(() => null),
     ]);
+
     availability = {
       pro: Boolean(pro && saleOpen(pro)),
       elite: Boolean(elite && saleOpen(elite)),
+    };
+    saleEndsAt = {
+      pro: pro?.event_start_at ?? null,
+      elite: elite?.event_start_at ?? null,
     };
   }
 
@@ -266,10 +275,7 @@ async function statusView() {
       elite: price("elite"),
     },
     availability,
-    saleEndsAt: {
-      pro: pro?.event_start_at ?? null,
-      elite: elite?.event_start_at ?? null,
-    },
+    saleEndsAt,
   };
 }
 
