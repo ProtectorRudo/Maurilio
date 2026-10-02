@@ -1,18 +1,18 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-Deno.serve(() =>
-  new Response(
+Deno.serve(() => {
+  return new Response(
     JSON.stringify({
-      error: "retired_endpoint",
-      message: "This Maurilio endpoint has been retired.",
+      error: "legacy_endpoint_retired",
+      product: "tipster_marketplace",
     }),
     {
       status: 410,
       headers: {
         "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": "no-store",
+        "Cache-Control": "no-store, max-age=0",
         "X-Content-Type-Options": "nosniff",
       },
     },
-  )
-);
+  );
+});
