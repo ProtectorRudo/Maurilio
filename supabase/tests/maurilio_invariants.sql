@@ -271,7 +271,85 @@ begin
   end;
 end $$;
 
-select public.maurilio_settle_pick('CI-INVARIANT-FREE','win',1.90);
+do $$
+begin
+  begin
+    perform public.maurilio_settle_pick(
+      'CI-INVARIANT-FREE',
+      'win',
+      1.90
+    );
+    insert into maurilio_invariant_results
+    values ('reject_premature_settlement', false, 'unexpected settlement');
+  exception when others then
+    insert into maurilio_invariant_results
+    values (
+      'reject_premature_settlement',
+      sqlerrm='event_not_started',
+      sqlerrm
+    );
+  end;
+end $$;
+
+select public.maurilio_settle_pick(
+  'CI-INVARIANT-FREE',
+  'void',
+  null
+);
+
+do $$
+declare
+  v_matchday_id uuid;
+begin
+  insert into public.maurilio_matchdays(
+    slug, match_date, label, status, published_at
+  )
+  values(
+    '2020-01-01-ci',
+    '2020-01-01',
+    'HISTORICAL SETTLEMENT TEST',
+    'archived',
+    '2020-01-01T12:00:00-03:00'
+  )
+  returning id into v_matchday_id;
+
+  insert into public.maurilio_picks(
+    matchday_id, public_id, tier, sport, competition, event, market, selection,
+    bookmaker, entry_odds, minimum_odds, probability_own, probability_low,
+    probability_high, stake_pct, stake_ars, thesis, principal_risk,
+    odds_captured_at, event_start_at, status, published_at
+  )
+  values(
+    v_matchday_id,
+    'CI-INVARIANT-SETTLE',
+    'free',
+    'football',
+    'TEST',
+    'Historical A vs B',
+    'Totals',
+    'Over',
+    'Bet365',
+    2.00,
+    1.80,
+    0.60,
+    0.55,
+    0.65,
+    0.01,
+    1000,
+    'Historical settlement thesis',
+    'Historical settlement risk',
+    '2020-01-01T11:00:00-03:00',
+    '2020-01-01T18:00:00-03:00',
+    'published',
+    '2020-01-01T12:00:00-03:00'
+  );
+end $$;
+
+select public.maurilio_settle_pick(
+  'CI-INVARIANT-SETTLE',
+  'win',
+  1.90
+);
 
 insert into maurilio_invariant_results
 select
@@ -279,7 +357,7 @@ select
   status='settled' and result='win' and pnl_ars=1000 and closing_odds=1.90,
   concat('status=',status,', pnl=',pnl_ars,', close=',closing_odds)
 from public.maurilio_picks
-where public_id='CI-INVARIANT-FREE';
+where public_id='CI-INVARIANT-SETTLE';
 
 insert into maurilio_invariant_results
 select
@@ -287,9 +365,9 @@ select
   exists(
     select 1 from public.maurilio_audit_events
     where event_type='pick_settled'
-      and entity_id='CI-INVARIANT-FREE'
+      and entity_id='CI-INVARIANT-SETTLE'
   ),
-  'pick_settled audit event exists';
+  'historical pick_settled audit event exists';
 
 do $$
 declare
@@ -344,7 +422,8 @@ select
   'risk_snapshot',
   (payload->>'bank_ars')::numeric = 101000
     and (payload->>'pnl_ars')::numeric = 1000
-    and (payload->>'settled_count')::int = 1,
+    and (payload->>'settled_count')::int = 2
+    and (payload->>'roi')::numeric = 0.5,
   payload::text
 from (select public.maurilio_risk_snapshot() payload) s;
 
@@ -407,6 +486,55 @@ begin
       where id=v_entitlement_id and status='revoked'
     ),
     'revoked entitlement is no longer active';
+end $$;
+
+do $$
+declare
+  v_subject uuid := '00000000-0000-4000-8000-000000000124'::uuid;
+  v_first jsonb;
+  v_second jsonb;
+begin
+  v_first := public.maurilio_reserve_order(
+    'ci-reserve-first-0000000001',
+    v_subject,
+    '2099-12-02',
+    'elite',
+    1500
+  );
+
+  v_second := public.maurilio_reserve_order(
+    'ci-reserve-second-000000001',
+    v_subject,
+    '2099-12-02',
+    'elite',
+    1500
+  );
+
+  insert into maurilio_invariant_results
+  values (
+    'checkout_first_reservation_new',
+    coalesce((v_first->>'reused')::boolean, true) is false,
+    v_first::text
+  );
+
+  insert into maurilio_invariant_results
+  values (
+    'checkout_second_reservation_reused',
+    coalesce((v_second->>'reused')::boolean, false) is true
+      and v_second->>'id' = v_first->>'id',
+    v_second::text
+  );
+
+  insert into maurilio_invariant_results
+  select
+    'checkout_single_active_order',
+    count(*) = 1,
+    concat('active_orders=',count(*))
+  from public.maurilio_orders
+  where subject_id=v_subject
+    and matchday_slug='2099-12-02'
+    and tier='elite'
+    and status in ('created','pending','processed');
 end $$;
 
 do $$
