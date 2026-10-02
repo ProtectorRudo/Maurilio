@@ -104,6 +104,14 @@ export default function PaymentAccountCard() {
     return <div className={styles.paymentConnect}><b>Cargando cobros…</b></div>;
   }
 
+  const expiry = status.tokenExpiresAt
+    ? new Date(status.tokenExpiresAt).getTime()
+    : NaN;
+  const needsRenewal =
+    status.connected &&
+    Number.isFinite(expiry) &&
+    expiry < Date.now() + 30 * 24 * 60 * 60 * 1000;
+
   return (
     <section className={styles.paymentConnect}>
       <div>
@@ -111,14 +119,25 @@ export default function PaymentAccountCard() {
         <h3>Mercado Pago</h3>
         <p>
           {status.connected
-            ? "Los pagos de tus suscriptores irán a tu cuenta. Maurilio recibe únicamente su comisión."
-            : "Conectá tu cuenta para poder recibir suscripciones directamente."}
+            ? needsRenewal
+              ? "Tu cuenta está conectada, pero conviene renovar la autorización para no interrumpir futuros cobros."
+              : "Los pagos de tus suscriptores irán a tu cuenta. Maurilio recibe únicamente su comisión."
+            : status.configured === false
+              ? "La conexión todavía no está habilitada por Maurilio."
+              : "Conectá tu cuenta para poder recibir suscripciones directamente."}
         </p>
       </div>
 
       {status.connected ? (
         <div className={styles.paymentConnectActions}>
-          <span className={styles.connectedBadge}>✓ Conectado</span>
+          <span className={styles.connectedBadge}>
+            {needsRenewal ? "Autorización por vencer" : "✓ Conectado"}
+          </span>
+          {needsRenewal ? (
+            <button type="button" onClick={() => void connect()} disabled={busy}>
+              {busy ? "Abriendo…" : "Renovar autorización"}
+            </button>
+          ) : null}
           <button type="button" onClick={() => void disconnect()} disabled={busy}>
             Desconectar
           </button>
