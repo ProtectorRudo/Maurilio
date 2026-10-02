@@ -1,6 +1,7 @@
-import Link from "next/link";
 import MarketplaceHeader from "@/components/MarketplaceHeader";
+import TipsterProfileForm from "@/components/TipsterProfileForm";
 import styles from "@/components/marketplace.module.css";
+import account from "@/components/account.module.css";
 
 export default function ParaTipstersPage() {
   return (
@@ -21,9 +22,16 @@ export default function ParaTipstersPage() {
           <article className={styles.step}><span>03</span><h3>Cobrá suscripciones</h3><p>Los suscriptores ven tus tips futuros mientras mantengan acceso vigente. El historial liquidado permanece público.</p></article>
         </div>
 
-        <Link className={styles.cta} href="/ingresar?next=%2Fpara-tipsters">
-          Crear cuenta de tipster
-        </Link>
+        <section className={account.formSection}>
+          <h2>Tu perfil de tipster</h2>
+          <p>
+            Podés crear o editar tu perfil desde acá. El rol tipster se activa únicamente
+            sobre tu propia cuenta autenticada; no se acepta desde metadata del registro.
+          </p>
+          <div style={{ marginTop: 20 }}>
+            <TipsterProfileForm />
+          </div>
+        </section>
       </section>
     </main>
   );
