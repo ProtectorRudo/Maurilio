@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import MarketplaceHeader from "@/components/MarketplaceHeader";
+import SubscribeButton from "@/components/SubscribeButton";
 import styles from "@/components/marketplace.module.css";
 import { getTipsterProfile } from "@/lib/server/tipster-marketplace";
 
@@ -106,12 +107,10 @@ export default async function TipsterProfilePage({
             <p><strong>{money(tipster.monthly_price_ars)}</strong> / mes</p>
 
             {tipster.accepting_subscribers && tipster.monthly_price_ars ? (
-              <Link
-                className={styles.cta}
-                href={`/ingresar?next=${encodeURIComponent(`/tipsters/${tipster.slug}`)}`}
-              >
-                Suscribirme
-              </Link>
+              <SubscribeButton
+                slug={tipster.slug}
+                returnPath={`/tipsters/${tipster.slug}`}
+              />
             ) : (
               <span className={`${styles.cta} ${styles.ctaDisabled}`}>
                 Suscripciones no disponibles
