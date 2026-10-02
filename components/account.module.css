@@ -31,3 +31,5 @@
 
 .accountSimple{border:1px solid var(--line);border-radius:20px;padding:22px;background:#080d0a}.accountWelcome h2{margin:0;font-size:28px;letter-spacing:-.03em}.accountWelcome p{margin:6px 0 0;color:#78867e;font-size:12px}.accountActionsGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}.accountActionsGrid a{border:1px solid var(--line);border-radius:14px;padding:16px;background:#070a08;transition:.16s ease}.accountActionsGrid a:hover{border-color:rgba(105,243,154,.24);transform:translateY(-1px)}.accountActionsGrid b{display:block;color:#edf4ef;font-size:14px}.accountActionsGrid span{display:block;margin-top:5px;color:#748178;font-size:10px;line-height:1.45}.logoutSimple{margin-top:18px;border:0;background:transparent;color:#76837b;font-size:11px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 @media(max-width:620px){.accountActionsGrid{grid-template-columns:1fr}}
+
+.odds span{display:block;margin-top:4px;color:#66736b;font-size:8px;text-transform:uppercase;letter-spacing:.08em}
