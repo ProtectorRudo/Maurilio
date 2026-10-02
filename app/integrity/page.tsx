@@ -163,6 +163,7 @@ export default async function IntegrityPage() {
         </a>
         <nav className="nav-links" aria-label="Integrity">
           <a href="/maurilio">Matchday</a>
+          <a href="/maurilio/access">Mis informes</a>
           <a href="/maurilio/archive">Registro</a>
         </nav>
       </header>
