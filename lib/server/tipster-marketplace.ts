@@ -11,11 +11,14 @@ export type PublicTipster = {
   is_verified: boolean;
   accepting_subscribers: boolean;
   picks_count_90d: number;
+  profit_units_90d: number | null;
   roi_pct_90d: number | null;
   win_rate_pct_90d: number | null;
   avg_odds_90d: number | null;
   avg_clv_pct_90d: number | null;
   max_drawdown_units_90d: number | null;
+  last_settled_at: string | null;
+  active_subscribers_count: number;
   open_tips_count: number;
   sponsored: boolean;
   sponsor_priority: number;
@@ -44,22 +47,26 @@ export type TipsterHistoryRow = {
 type RawTipster = Omit<
   PublicTipster,
   | "monthly_price_ars"
+  | "picks_count_90d"
+  | "profit_units_90d"
   | "roi_pct_90d"
   | "win_rate_pct_90d"
   | "avg_odds_90d"
   | "avg_clv_pct_90d"
   | "max_drawdown_units_90d"
-  | "picks_count_90d"
+  | "active_subscribers_count"
   | "open_tips_count"
   | "sponsor_priority"
 > & {
   monthly_price_ars: number | string | null;
+  picks_count_90d: number | string | null;
+  profit_units_90d: number | string | null;
   roi_pct_90d: number | string | null;
   win_rate_pct_90d: number | string | null;
   avg_odds_90d: number | string | null;
   avg_clv_pct_90d: number | string | null;
   max_drawdown_units_90d: number | string | null;
-  picks_count_90d: number | string | null;
+  active_subscribers_count: number | string | null;
   open_tips_count: number | string | null;
   sponsor_priority: number | string | null;
 };
@@ -89,11 +96,13 @@ function normalize(row: RawTipster): PublicTipster {
     specialties: Array.isArray(row.specialties) ? row.specialties : [],
     monthly_price_ars: numeric(row.monthly_price_ars),
     picks_count_90d: integer(row.picks_count_90d),
+    profit_units_90d: numeric(row.profit_units_90d),
     roi_pct_90d: numeric(row.roi_pct_90d),
     win_rate_pct_90d: numeric(row.win_rate_pct_90d),
     avg_odds_90d: numeric(row.avg_odds_90d),
     avg_clv_pct_90d: numeric(row.avg_clv_pct_90d),
     max_drawdown_units_90d: numeric(row.max_drawdown_units_90d),
+    active_subscribers_count: integer(row.active_subscribers_count),
     open_tips_count: integer(row.open_tips_count),
     sponsor_priority: integer(row.sponsor_priority),
   };
@@ -145,14 +154,48 @@ function sortCards(cards: PublicTipster[], sort: string) {
         b.picks_count_90d - a.picks_count_90d
       );
     }
+
     if (sort === "clv") {
       return (
         (b.avg_clv_pct_90d ?? -9999) - (a.avg_clv_pct_90d ?? -9999) ||
         b.picks_count_90d - a.picks_count_90d
       );
     }
+
+    if (sort === "drawdown") {
+      return (
+        (a.max_drawdown_units_90d ?? Number.POSITIVE_INFINITY) -
+          (b.max_drawdown_units_90d ?? Number.POSITIVE_INFINITY) ||
+        b.picks_count_90d - a.picks_count_90d
+      );
+    }
+
+    if (sort === "subscribers") {
+      return (
+        b.active_subscribers_count - a.active_subscribers_count ||
+        b.picks_count_90d - a.picks_count_90d
+      );
+    }
+
+    if (sort === "price") {
+      return (
+        (a.monthly_price_ars ?? Number.POSITIVE_INFINITY) -
+          (b.monthly_price_ars ?? Number.POSITIVE_INFINITY) ||
+        b.picks_count_90d - a.picks_count_90d
+      );
+    }
+
+    if (sort === "recent") {
+      return (
+        new Date(b.last_settled_at ?? 0).getTime() -
+          new Date(a.last_settled_at ?? 0).getTime() ||
+        b.picks_count_90d - a.picks_count_90d
+      );
+    }
+
     return (
       b.picks_count_90d - a.picks_count_90d ||
+      (b.avg_clv_pct_90d ?? -9999) - (a.avg_clv_pct_90d ?? -9999) ||
       (b.roi_pct_90d ?? -9999) - (a.roi_pct_90d ?? -9999) ||
       a.display_name.localeCompare(b.display_name)
     );
@@ -160,22 +203,34 @@ function sortCards(cards: PublicTipster[], sort: string) {
 }
 
 export async function getMarketplace(
-  input: { q?: string; sport?: string; sort?: string } = {},
+  input: {
+    q?: string;
+    sport?: string;
+    sort?: string;
+    verified?: boolean;
+    available?: boolean;
+    minHistory?: number;
+  } = {},
 ) {
   const query = new URLSearchParams({ select: "*", limit: "500" });
   const rows = await rest<RawTipster[]>("maurilio_tipster_search_public", query);
   const q = (input.q ?? "").trim().slice(0, 80);
   const sport = (input.sport ?? "").trim().slice(0, 40);
   const sort = (input.sort ?? "history").trim();
+  const minHistory = Math.max(0, Math.min(500, Math.trunc(input.minHistory ?? 0)));
 
-  const cards = rows
-    .map(normalize)
+  const allCards = rows.map(normalize);
+
+  const cards = allCards
     .filter((card) => matches(card, q))
     .filter(
       (card) =>
         !sport ||
         card.sports.some((item) => item.toLowerCase() === sport.toLowerCase()),
-    );
+    )
+    .filter((card) => !input.verified || card.is_verified)
+    .filter((card) => !input.available || card.accepting_subscribers)
+    .filter((card) => card.picks_count_90d >= minHistory);
 
   return {
     sponsored: cards
@@ -189,6 +244,16 @@ export async function getMarketplace(
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b)),
     total: cards.length,
+    summary: {
+      totalTipsters: cards.length,
+      verifiedTipsters: cards.filter((card) => card.is_verified).length,
+      activeSubscribers: cards.reduce(
+        (total, card) => total + card.active_subscribers_count,
+        0,
+      ),
+      picks90d: cards.reduce((total, card) => total + card.picks_count_90d, 0),
+      acceptingSubscribers: cards.filter((card) => card.accepting_subscribers).length,
+    },
   };
 }
 
