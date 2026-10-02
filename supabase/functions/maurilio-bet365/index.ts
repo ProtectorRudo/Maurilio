@@ -15,6 +15,59 @@ function reply(body: Json, status = 200) {
   });
 }
 
+
+function serverConfig() {
+  const url = Deno.env.get("SUPABASE_URL")?.replace(/\/$/, "");
+  const key =
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ||
+    (() => {
+      try {
+        const keys = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") || "{}");
+        return keys.default as string | undefined;
+      } catch {
+        return undefined;
+      }
+    })();
+
+  if (!url || !key) throw new Error("server_config_missing");
+  return { url, key };
+}
+
+async function authenticatedUser(request: Request) {
+  const auth = request.headers.get("authorization") || "";
+  if (!auth.toLowerCase().startsWith("bearer ")) return null;
+
+  const { url } = serverConfig();
+  const anon = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!anon) throw new Error("anon_key_missing");
+
+  const response = await fetch(`${url}/auth/v1/user`, {
+    headers: { apikey: anon, Authorization: auth },
+  });
+
+  if (!response.ok) return null;
+  const body = await response.json() as { id?: string };
+  return typeof body.id === "string" ? body.id : null;
+}
+
+async function feedAuthorized(userId: string) {
+  const { url, key } = serverConfig();
+  const response = await fetch(
+    `${url}/rest/v1/maurilio_accounts?select=role&user_id=eq.${encodeURIComponent(userId)}&limit=1`,
+    {
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        Accept: "application/json",
+      },
+    },
+  );
+
+  if (!response.ok) throw new Error("account_lookup_failed");
+  const rows = await response.json() as Array<{ role?: string }>;
+  return rows[0]?.role === "tipster" || rows[0]?.role === "admin";
+}
+
 function apiBase() {
   return (Deno.env.get("ODDS_API_BASE_URL") || "https://api.odds-api.net/v1")
     .replace(/\/$/, "");
@@ -149,6 +202,13 @@ Deno.serve(async (request) => {
   }
 
   try {
+    const userId = await authenticatedUser(request);
+    if (!userId) {
+      return reply({ error: "authentication_required" }, 401);
+    }
+    if (!(await feedAuthorized(userId))) {
+      return reply({ error: "tipster_role_required" }, 403);
+    }
     if (view === "events") {
       const sport = bounded(url.searchParams.get("sport"), 60);
       const league = bounded(url.searchParams.get("league"), 90);
