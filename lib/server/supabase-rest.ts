@@ -578,3 +578,32 @@ export async function reserveOrder(input: {
     },
   });
 }
+
+
+export async function issueRecoveryCode(
+  subjectId: string,
+  tokenHash: string,
+) {
+  return requestJson<{
+    issued_at: string;
+    expires_at: string;
+  }>("rpc/maurilio_issue_recovery_code", {
+    method: "POST",
+    body: {
+      p_subject_id: subjectId,
+      p_token_hash: tokenHash,
+    },
+  });
+}
+
+export async function consumeRecoveryCode(tokenHash: string) {
+  return requestJson<{
+    subject_id: string;
+    active_entitlements: number;
+  }>("rpc/maurilio_consume_recovery_code", {
+    method: "POST",
+    body: {
+      p_token_hash: tokenHash,
+    },
+  });
+}
