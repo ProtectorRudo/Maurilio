@@ -364,13 +364,15 @@ export default function TipsterStudio() {
 
       if (!response.ok) {
         const copy =
-          body.error === "market_not_auto_settleable"
-            ? "Ese mercado no permite liquidación automática."
-            : body.error === "bet365_selection_unavailable"
-              ? "La línea ya no está disponible en Bet365. Recargá las cuotas."
-              : body.error === "event_started"
-                ? "El evento ya comenzó."
-                : "No pudimos publicar el tip.";
+          body.error === "duplicate_tip"
+            ? "Ya publicaste esta misma selección para este evento. No se permiten duplicados."
+            : body.error === "market_not_auto_settleable"
+              ? "Ese mercado no permite liquidación automática."
+              : body.error === "bet365_selection_unavailable"
+                ? "La línea ya no está disponible en Bet365. Recargá las cuotas."
+                : body.error === "event_started"
+                  ? "El evento ya comenzó."
+                  : "No pudimos publicar el tip.";
         setMessage({ kind: "error", text: copy });
         return;
       }
