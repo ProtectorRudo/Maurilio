@@ -408,95 +408,92 @@ export default function TipsterStudio() {
 
   return (
     <>
-      <div className={styles.top}>
+      <div className={styles.simpleTop}>
         <div>
           <span className={`${styles.status} ${feedReady === false ? styles.offline : ""}`}>
-            {feedReady === null ? "Verificando Bet365" : feedReady ? "Bet365 conectado" : "Bet365 no disponible"}
+            {feedReady === null ? "Conectando" : feedReady ? "Bet365 conectado" : "Bet365 no disponible"}
           </span>
-          <h1>Estudio</h1>
+          <h1>Publicar tip</h1>
+          <p>Elegí partido, apuesta y stake.</p>
         </div>
-        <p>
-          Sólo aparecen líneas que Maurilio puede liquidar automáticamente.
-          La cuota final se revalida en el servidor al publicar.
-        </p>
       </div>
 
-      <div className={styles.warning}>
-        Publicar es irreversible. La cuota visible en tu navegador es orientativa:
-        la cuota registrada será la que Bet365 entregue cuando el servidor selle el tip.
+      <div className={styles.stepBar}>
+        <span className={selectedEvent ? styles.doneStep : styles.activeStep}>1. Partido</span>
+        <span className={selectedLine ? styles.doneStep : selectedEvent ? styles.activeStep : ""}>2. Apuesta</span>
+        <span className={selectedLine ? styles.activeStep : ""}>3. Publicar</span>
       </div>
 
-      <div className={styles.controls}>
+      <div className={styles.simpleControls}>
         <input
           value={filter}
           onChange={(event) => setFilter(event.target.value)}
-          placeholder="Filtrar por equipo, liga o deporte"
+          placeholder="Buscar equipo o liga"
         />
         <button type="button" onClick={() => void loadEvents()} disabled={loadingEvents}>
-          {loadingEvents ? "Actualizando…" : "Actualizar eventos"}
+          {loadingEvents ? "Actualizando…" : "Actualizar"}
         </button>
       </div>
 
       <div className={styles.layout}>
         <section className={styles.panel}>
           <div className={styles.panelHead}>
-            <b>Próximos eventos</b>
+            <b>Partidos</b>
             <span>{visibleEvents.length}</span>
           </div>
+
           <div className={styles.events}>
             {visibleEvents.length === 0 ? (
               <div className={styles.empty}>
-                <b>Sin eventos disponibles.</b>
-                Revisá el feed o cambiá el filtro.
+                <b>No hay partidos.</b>
+                Probá actualizar.
               </div>
-            ) : visibleEvents.map((event) => (
-              <button
-                type="button"
-                key={event.id}
-                className={`${styles.event} ${selectedEvent?.id === event.id ? styles.selected : ""}`}
-                onClick={() => void chooseEvent(event)}
-              >
-                <strong>{event.title}</strong>
-                <span>{event.competition} · {event.sport}</span>
-                <small>{dateTime(event.start)}</small>
-              </button>
-            ))}
+            ) : (
+              visibleEvents.map((event) => (
+                <button
+                  type="button"
+                  key={event.id}
+                  className={`${styles.event} ${selectedEvent?.id === event.id ? styles.selected : ""}`}
+                  onClick={() => void chooseEvent(event)}
+                >
+                  <strong>{event.title}</strong>
+                  <span>{event.competition}</span>
+                  <small>{dateTime(event.start)}</small>
+                </button>
+              ))
+            )}
           </div>
         </section>
 
         <section className={`${styles.panel} ${styles.oddsPanel}`}>
           <div className={styles.panelHead}>
-            <b>{selectedEvent ? selectedEvent.title : "Líneas Bet365"}</b>
-            <span>{lines.length} compatibles</span>
+            <b>{selectedEvent ? "Elegí una apuesta" : "Apuestas"}</b>
+            {selectedEvent ? <span>{selectedEvent.title}</span> : null}
           </div>
 
           {loadingLines ? (
-            <div className={styles.empty}><b>Cargando cuotas…</b></div>
+            <div className={styles.empty}><b>Cargando apuestas…</b></div>
           ) : !selectedEvent ? (
             <div className={styles.empty}>
-              <b>Elegí un evento.</b>
-              Después vas a ver sólo mercados compatibles con liquidación automática.
+              <b>Primero elegí un partido.</b>
             </div>
           ) : lines.length === 0 ? (
-            <div className={styles.empty}><b>No hay líneas publicables.</b></div>
+            <div className={styles.empty}><b>No hay apuestas disponibles.</b></div>
           ) : (
-            <div className={styles.lines}>
+            <div className={styles.simpleLines}>
               {lines.map((line) => (
-                <div className={styles.line} key={line.selectionKey}>
-                  <div>
-                    <strong>{line.market} · {line.selection}</strong>
-                    <p>
-                      {line.side || "selección"}
-                      {line.line !== null ? ` · línea ${line.line}` : ""}
-                    </p>
-                  </div>
-                  <div>
-                    <div className={styles.price}>{line.odds.toFixed(2)}</div>
-                    <button type="button" onClick={() => setSelectedLine(line)}>
-                      Elegir
-                    </button>
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  className={`${styles.simpleLine} ${selectedLine?.selectionKey === line.selectionKey ? styles.chosenLine : ""}`}
+                  key={line.selectionKey}
+                  onClick={() => setSelectedLine(line)}
+                >
+                  <span>
+                    <strong>{line.selection}</strong>
+                    <small>{line.market}{line.line !== null ? ` · ${line.line}` : ""}</small>
+                  </span>
+                  <b>{line.odds.toFixed(2)}</b>
+                </button>
               ))}
             </div>
           )}
@@ -504,27 +501,35 @@ export default function TipsterStudio() {
       </div>
 
       {selectedLine && selectedEvent ? (
-        <section className={styles.publish}>
-          <div className={styles.publishGrid}>
-            <div className={styles.selection}>
-              <b>{selectedLine.odds.toFixed(2)}</b> · {selectedEvent.title}<br />
-              {selectedLine.market} · {selectedLine.selection}
-            </div>
-            <label>
-              Stake unidades
-              <input
-                type="number"
-                min="0.01"
-                max="5"
-                step="0.01"
-                value={stake}
-                onChange={(event) => setStake(event.target.value)}
-              />
-            </label>
-            <button className={styles.button} disabled={publishing} type="button" onClick={() => void publish()}>
-              {publishing ? "Sellando…" : "Publicar tip"}
-            </button>
+        <section className={styles.simplePublish}>
+          <div className={styles.chosenBet}>
+            <span>{selectedEvent.title}</span>
+            <strong>{selectedLine.selection}</strong>
+            <b>{selectedLine.odds.toFixed(2)}</b>
           </div>
+
+          <label>
+            Stake
+            <input
+              type="number"
+              min="0.01"
+              max="5"
+              step="0.01"
+              value={stake}
+              onChange={(event) => setStake(event.target.value)}
+            />
+          </label>
+
+          <button
+            className={styles.button}
+            disabled={publishing}
+            type="button"
+            onClick={() => void publish()}
+          >
+            {publishing ? "Publicando…" : "Publicar tip"}
+          </button>
+
+          <small>Al publicar, Maurilio vuelve a validar la cuota Bet365.</small>
         </section>
       ) : null}
 
