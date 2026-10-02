@@ -250,3 +250,15 @@ Security properties:
 
 Premium and buyer routes use `private, no-store`, `noarchive` and
 `Referrer-Policy: no-referrer` headers.
+
+
+## Pseudonymous Access Tag
+
+Every premium response and historical report includes a short Access Tag derived
+from the random buyer subject UUID. The raw subject UUID is never rendered.
+
+The tag is stable across devices restored with the same Recovery Code lineage, so
+shared screenshots can be attributed to an access subject without collecting a
+name, email address, phone number or other personal identifier. The tag is a
+deterrence/audit mechanism, not a claim that screenshots can be technically
+prevented.
