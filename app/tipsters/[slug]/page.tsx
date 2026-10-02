@@ -110,10 +110,10 @@ export default async function TipsterProfilePage({
           </article>
 
           <aside className={styles.simpleSubscribeBox}>
-            <span>Suscripción mensual</span>
+            <span>Acceso por 30 días</span>
             <strong>{money(tipster.monthly_price_ars)}</strong>
             <p>
-              Accedé a los próximos tips mientras tu suscripción esté activa.
+              El pago va directo al tipster. Maurilio cobra únicamente su comisión.
             </p>
 
             {tipster.open_tips_count > 0 ? (
@@ -129,7 +129,7 @@ export default async function TipsterProfilePage({
               />
             ) : (
               <span className={`${styles.cta} ${styles.ctaDisabled}`}>
-                Suscripciones no disponibles
+                Acceso no disponible
               </span>
             )}
           </aside>
