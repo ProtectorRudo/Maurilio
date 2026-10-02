@@ -132,7 +132,7 @@ function mapStatus(order: Record<string, unknown>) {
   if (status === "processed" && detail === "partially_refunded") return "paid";
   if (status === "processed" && detail === "refunded") return "refunded";
   if (status === "refunded") return "refunded";
-  if (status === "canceled") return "cancelled";
+  if (status === "canceled" || status === "expired") return "cancelled";
   if (status === "failed") return "failed";
   if (status === "processing" || status === "action_required") return "pending";
   return "created";
