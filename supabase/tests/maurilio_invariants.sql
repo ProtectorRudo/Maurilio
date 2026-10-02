@@ -252,7 +252,7 @@ select
   ),
   'pick_settled audit event exists';
 
-do $
+do $$
 declare
   v_id uuid;
 begin
@@ -277,7 +277,7 @@ begin
       sqlerrm
     );
   end;
-end $;
+end $$;
 
 do $$
 begin
