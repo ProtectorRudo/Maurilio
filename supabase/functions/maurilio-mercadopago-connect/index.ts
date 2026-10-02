@@ -384,7 +384,19 @@ Deno.serve(async (request) => {
         "return=minimal",
       );
 
-      return reply({ connected: false });
+      await db(
+        `maurilio_tipsters?id=eq.${encodeURIComponent(tipster.id)}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            accepting_subscribers: false,
+            updated_at: new Date().toISOString(),
+          }),
+        },
+        "return=minimal",
+      );
+
+      return reply({ connected: false, salesEnabled: false });
     }
 
     return reply({ error: "invalid_action" }, 400);
