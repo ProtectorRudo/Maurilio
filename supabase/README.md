@@ -18,6 +18,7 @@ Current Maurilio migration versions:
 11. `20261001233859_add_maurilio_sale_risk_stop.sql`
 12. `20261002000812_add_maurilio_append_only_audit.sql`
 13. `20261002000829_audit_maurilio_publication_events.sql`
+14. `20261002001148_add_maurilio_admin_login_throttle.sql`
 
 The final migration contains the canonical publication RPC and immutability
 triggers. Earlier publication migrations are retained to match applied migration
@@ -35,7 +36,11 @@ covers the critical lifecycle:
 - next Matchday allowed after settlement;
 - canonical bankroll/risk snapshot;
 - rejection of fragile signals whose lower probability bound has non-positive EV;
-- rejection of late Bet365 captures and picks published after event start.
+- rejection of late Bet365 captures and picks published after event start;
+- publication/sale-stop/settlement audit events;
+- append-only audit enforcement;
+- irreversible risk stop at database level;
+- distributed admin login lockout after repeated failures.
 
 Run it only against a test/disposable environment or an explicitly authorized SQL
 session.
@@ -54,8 +59,24 @@ Sensitive RPCs are also service-role only:
 - `maurilio_settle_pick(text,text,numeric)`
 - `maurilio_risk_snapshot()`
 - `maurilio_close_pick_sale(text,text,numeric)`
+- `maurilio_admin_login_gate(text,text)`
 
 Operational publication, sale-stop and settlement events are written to
 `maurilio_audit_events`. The audit log is append-only at the database layer.
 
 No service-role key may be exposed to the browser.
+
+
+## Admin login protection
+
+The Control Room does not store raw client IP addresses. The application derives
+an HMAC throttle key using the server-only admin secret and sends only that digest
+to Supabase.
+
+Policy:
+
+- 5 failed attempts per 15-minute window;
+- 30-minute lockout after the fifth failure;
+- distributed state across server instances;
+- successful authentication clears the throttle record;
+- if the security store is unavailable, production admin login fails closed.
