@@ -147,6 +147,11 @@ Payment flow:
 
 Browser return URLs never unlock premium content.
 
+Checkout reservation is idempotent per browser subject + Matchday + tier. Repeated
+clicks reuse one active local order instead of creating parallel Mercado Pago
+orders. A stale reservation that never obtained a provider checkout URL is released
+after five minutes.
+
 Refund/cancel/failure revokes access.
 
 Verified buyers also have a `/maurilio/access` library. The entitlement is tied
@@ -167,6 +172,9 @@ P&L is calculated by the server:
 - LOSS = −stake
 - PUSH = 0
 - VOID = 0
+
+WIN / LOSS / PUSH are rejected before the event start timestamp. VOID is allowed
+before kickoff for cancelled/invalidated entries.
 
 The operator cannot type arbitrary P&L.
 
